@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { AdminLogin } from "./pages/AdminLogin";
 import { AdminGate } from "../../components/AdminGate";
-import { AdminDashboard } from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 
 
 export function AdminApp() {

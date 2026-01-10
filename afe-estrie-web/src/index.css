@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+/* Cap hero title height without ellipsis */
+.hero-title {
+  line-height: 1.05;
+  max-height: calc(1.05em * 4); /* 4 lines max */
+  overflow: hidden;
+}

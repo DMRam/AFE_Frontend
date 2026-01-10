@@ -21,6 +21,16 @@ export function SiteFooter() {
                                 </a>
                             </li>
                             <li>☎️ (000) 000-0000</li>
+                            <li>
+                                <a
+                                    href="http://192.168.2.132:5173/admin/login"
+                                    className="font-semibold text-blue-600 hover:underline hover:text-blue-800"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Ouverture de session
+                                </a>
+                            </li>
                         </ul>
                     </div>
 

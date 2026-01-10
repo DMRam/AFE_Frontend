@@ -1,7 +1,7 @@
 const cards = [
-    { title: "Relation d’aide", desc: "Soutien et écoute, selon vos besoins.", href: "#aide" },
-    { title: "Groupes de partage", desc: "Rencontres et échanges en communauté.", href: "#groupes" },
-    { title: "Devenir membre", desc: "Accès aux activités et soutien de l’AFE.", href: "#membre" },
+    { title: "En bref", desc: "Qu’est-ce que la fibromyalgie? Un terme plutôt méconnu des gens. La fibromyalgie est un syndrome caractérisé par de la fatigue et des douleurs chroniques. La fibromyalgie est totalement invisible. Les personnes qui en souffrent semblent souvent en pleine santé. Par ailleurs, leur sommeil profond est perturbé; elles ne se sentent donc pas reposées au lever et éprouvent souvent des raideurs matinales. Pour en savoir plus sur la fibromyalgie, cliquer sur le bouton « Continuer » ci-dessous.", href: "#aide" },
+    { title: "Diagnostic", desc: "Le médecin peut établir un diagnostic, il tient tout d’abord compte de l’historique médical de son patient et de la sévérité des symptômes majeurs. Il s’assure ensuite de l’absence d’autres maladies qui provoquent des symptômes semblables. Puis il effectue un examen clinique pour évaluer l’étendue et l’intensité de la douleur afin d’établir son diagnostic. Pour en savoir plus sur les méthodes utilisées permettant de diagnostiquer la fibromyalgie, cliquer sur le bouton « Continuer » ci-dessous.", href: "#groupes" },
+    { title: "Symptômes", desc: "Vous vous demandez si vos symptômes correspondent à la fibromyalgie ou à autre chose. Les symptômes de la fibromyalgie sont divers et complexes. La douleur est le principal symptôme et s’accompagne souvent d’autres troubles métaboliques comme les migraines, le côlon irritable et certains problèmes de concentration et de mémoire. Des symptômes de confusion, de distraction sont aussi fréquents, on fait alors allusion au fibro brouillard. Pour en savoir plus, cliquer sur le bouton « Continuer ».", href: "#membre" },
 ];
 
 export function QuickCards() {
