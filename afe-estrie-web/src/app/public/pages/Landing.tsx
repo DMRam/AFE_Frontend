@@ -5,30 +5,17 @@ import { NewsletterCTA } from "../components/landing/NewsletterCTA";
 import { PartnersStrip } from "../components/landing/PartnersStrip";
 import { QuickCards } from "../components/landing/QuickCards";
 import { ResourcesPreview } from "../components/landing/ResourcesPreview";
-import { SiteFooter } from "../components/layout/SiteFooter";
-import { SiteHeader } from "../components/layout/SiteHeader";
-import { SiteNav } from "../components/layout/SiteNav";
-
-
-
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-white">
-      <SiteHeader />
-      <SiteNav />
-
-      <main>
-        <Hero />
-        <QuickCards />
-        <PartnersStrip />
-        <ActivitiesPreview />
-        <EventsPreview />
-        <ResourcesPreview />
-        <NewsletterCTA />
-      </main>
-
-      <SiteFooter />
-    </div>
+    <>
+      <Hero />
+      <QuickCards />
+      <PartnersStrip />
+      <ActivitiesPreview />
+      <EventsPreview />
+      <ResourcesPreview />
+      <NewsletterCTA />
+    </>
   );
 }

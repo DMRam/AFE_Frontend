@@ -5,6 +5,7 @@ export type NavNode = {
   order?: number;
   enabled?: boolean;
   children?: NavNode[];
+  icon?: string;
 };
 
 export type NavItem = NavNode;

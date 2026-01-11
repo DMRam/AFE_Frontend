@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getNavigation, saveNavigation } from "../../../services/navigationRepo";
 import type { NavItem, NavNode } from "../../../content/types/navTypes";
+import {
+    Plus, ChevronDown, ChevronRight, Trash2, Edit2, Eye, EyeOff,
+    Save, RefreshCw, Search, X, Menu as MenuIcon, Folder, File,
+    Layers, Check, Hash, Link, Globe
+} from "lucide-react";
 
 /** ---------------------------------------------
  * UX types
@@ -8,13 +13,20 @@ import type { NavItem, NavNode } from "../../../content/types/navTypes";
 type ToastType = "success" | "error" | "info";
 type ToastMessage = { id: string; message: string; type: ToastType };
 
-type OpenPath = {
-    menuId: string | null;     // level 1 open
-    submenuId: string | null;  // level 2 open
-    pageId: string | null;     // level 3 (optional)
+// Smart accordion state - tracks what's open at each level
+type AccordionState = {
+    navbarItems: Set<string>;    // Which navbar items are expanded
+    menuItems: Set<string>;      // Which menu items are expanded (within their parent navbar)
+    editMode: EditMode | null;   // What's currently being edited
 };
 
-const TOAST_TIMEOUT = 1800;
+type EditMode = {
+    type: 'navbar' | 'menu' | 'submenu';
+    id: string;
+    parentId?: string;           // For menu items (parent navbar) and submenus (parent menu)
+};
+
+const TOAST_TIMEOUT = 3000;
 
 /** ---------------------------------------------
  * Helpers
@@ -72,10 +84,6 @@ function uniqueId(base: string, used: Set<string>) {
     return id;
 }
 
-/** ---------------------------------------------
- * Normalize (recursive)
- * Always sorts by order and rewrites order sequentially
- * --------------------------------------------- */
 function normalizeNodes(nodes: NavNode[] = []): NavNode[] {
     return [...nodes]
         .filter(Boolean)
@@ -106,75 +114,72 @@ function contains(q: string, value?: string) {
 }
 
 /** ---------------------------------------------
- * Small UI bits (same style)
+ * UI Components
  * --------------------------------------------- */
-function Badge({
-    tone,
-    children,
-    className = "",
-}: {
-    tone: "ok" | "warn" | "muted" | "error";
-    children: React.ReactNode;
-    className?: string;
-}) {
-    const toneClasses = {
-        ok: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        warn: "bg-amber-50 text-amber-800 border-amber-200",
-        error: "bg-red-50 text-red-700 border-red-200",
-        muted: "bg-gray-50 text-gray-600 border-gray-200",
+function StatusBadge({ enabled, size = "sm" }: { enabled: boolean | undefined; size?: "sm" | "md" }) {
+    const sizeClasses = {
+        sm: "px-2 py-0.5 text-xs",
+        md: "px-3 py-1 text-sm"
     };
+
     return (
-        <span
-            className={`inline-flex items-center rounded-md border px-2 py-1 text-xs font-semibold ${toneClasses[tone]} ${className}`}
-        >
-            {children}
+        <span className={`inline-flex items-center rounded-full ${sizeClasses[size]} ${enabled
+            ? "bg-green-100 text-green-700 border border-green-200"
+            : "bg-gray-100 text-gray-600 border border-gray-200"
+            }`}>
+            {enabled ? (
+                <>
+                    <Eye className="w-3 h-3 mr-1" />
+                    Visible
+                </>
+            ) : (
+                <>
+                    <EyeOff className="w-3 h-3 mr-1" />
+                    Hidden
+                </>
+            )}
         </span>
     );
 }
 
-function IconButton({
-    title,
-    disabled,
+function ActionButton({
+    icon: Icon,
+    label,
     onClick,
-    children,
-    variant = "ghost",
-    className = "",
+    variant = "default",
+    disabled = false,
+    loading = false,
+    className = ""
 }: {
-    title: string;
-    disabled?: boolean;
+    icon: any;
+    label: string;
     onClick: () => void;
-    children: React.ReactNode;
-    variant?: "default" | "danger" | "ghost";
+    variant?: "default" | "primary" | "danger" | "ghost";
+    disabled?: boolean;
+    loading?: boolean;
     className?: string;
 }) {
-    const variantClasses = {
-        default: "border bg-white hover:bg-gray-50",
-        danger: "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
-        ghost: "border-transparent bg-transparent hover:bg-gray-100",
+    const variants = {
+        default: "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+        primary: "border-red-600 bg-red-600 text-white hover:bg-red-700 hover:border-red-700",
+        danger: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
+        ghost: "border-transparent bg-transparent text-gray-600 hover:bg-gray-100"
     };
+
     return (
         <button
             type="button"
-            title={title}
-            aria-label={title}
-            disabled={disabled}
             onClick={onClick}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-md text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${variantClasses[variant]} ${className}`}
+            disabled={disabled || loading}
+            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
         >
-            {children}
+            {loading ? (
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 animate-spin rounded-full" />
+            ) : (
+                <Icon className="w-4 h-4" />
+            )}
+            {label}
         </button>
-    );
-}
-
-function Loader({ size = "sm", text }: { size?: "sm" | "md"; text?: string }) {
-    const sizeClasses = { sm: "h-4 w-4", md: "h-6 w-6" };
-    return (
-        <div className="flex items-center gap-2">
-            <div
-                className={`animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 ${sizeClasses[size]}`}
-            />
-            {text ? <span className="text-sm text-gray-600">{text}</span> : null}
-        </div>
     );
 }
 
@@ -187,23 +192,29 @@ function Toast({
     type: ToastType;
     onClose: () => void;
 }) {
-    const bg = {
-        success: "bg-green-50 border-green-200",
-        error: "bg-red-50 border-red-200",
-        info: "bg-blue-50 border-blue-200",
-    }[type];
+    const icons = {
+        success: "✅",
+        error: "❌",
+        info: "💡"
+    };
 
     return (
-        <div className={`rounded-md border p-3 text-sm ${bg}`}>
+        <div className={`rounded-lg border p-3 shadow-lg animate-fadeIn ${type === "success" ? "bg-green-50 border-green-200" :
+            type === "error" ? "bg-red-50 border-red-200" :
+                "bg-blue-50 border-blue-200"
+            }`}>
             <div className="flex items-center justify-between gap-3">
-                <span className="font-medium">{message}</span>
+                <div className="flex items-center gap-2">
+                    <span>{icons[type]}</span>
+                    <span className="font-medium text-sm">{message}</span>
+                </div>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
                     aria-label="Close"
                 >
-                    ✕
+                    <X className="w-4 h-4" />
                 </button>
             </div>
         </div>
@@ -215,38 +226,313 @@ function EmptyState({
     title,
     description,
     action,
+    size = "md"
 }: {
-    icon?: string;
+    icon?: string | React.ReactNode;
     title: string;
     description?: string;
     action?: React.ReactNode;
+    size?: "sm" | "md" | "lg";
 }) {
+    const sizes = {
+        sm: "p-4",
+        md: "p-8",
+        lg: "p-12"
+    };
+
     return (
-        <div className="rounded-lg border bg-white p-8 text-center">
-            <div className="text-4xl mb-3">{icon}</div>
-            <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>
-            {description ? <p className="text-sm text-gray-600 mb-4">{description}</p> : null}
+        <div className={`rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 text-center ${sizes[size]}`}>
+            <div className="text-3xl text-gray-400 mb-3">
+                {typeof icon === "string" ? icon : icon}
+            </div>
+            <h3 className="font-semibold text-gray-700 mb-2">{title}</h3>
+            {description && <p className="text-sm text-gray-500 mb-4 max-w-md mx-auto">{description}</p>}
             {action}
         </div>
     );
 }
 
 /** ---------------------------------------------
- * NavManager (Fully fixed: menu -> submenu -> sub-submenu)
+ * Form Components
+ * --------------------------------------------- */
+function NavbarItemEditForm({
+    navbarItem,
+    onUpdate,
+    onSave,
+    onCancel,
+    onAddMenuItem
+}: {
+    navbarItem: NavItem;
+    onUpdate: (updates: Partial<NavItem>) => void;
+    onSave: () => void;
+    onCancel: () => void;
+    onAddMenuItem: () => void;
+}) {
+    return (
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 animate-slideDown">
+            <div className="space-y-3">
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Navbar Item Label
+                    </label>
+                    <input
+                        type="text"
+                        value={navbarItem.label}
+                        onChange={(e) => onUpdate({ label: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        placeholder="e.g., About, Services, Contact"
+                        autoFocus
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Link URL
+                    </label>
+                    <input
+                        type="text"
+                        value={navbarItem.href || ""}
+                        onChange={(e) => onUpdate({ href: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        placeholder="/about or #section"
+                    />
+                </div>
+
+                {/* Add menu item button inside navbar item edit form */}
+                <button
+                    onClick={onAddMenuItem}
+                    className={`w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs rounded-lg transition-all ${!navbarItem.children?.length
+                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
+                        : 'border border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                        }`}
+                >
+                    <Plus className="w-3 h-3" />
+                    {!navbarItem.children?.length
+                        ? `Add menu item to "${navbarItem.label}"`
+                        : `Add another menu item to "${navbarItem.label}"`
+                    }
+                </button>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={navbarItem.enabled}
+                            onChange={(e) => onUpdate({ enabled: e.target.checked })}
+                            className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                        />
+                        <span className="text-xs text-gray-700">Visible in navbar</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onCancel}
+                            className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onSave}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            <Check className="w-3 h-3" />
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function MenuItemEditForm({
+    menuItem,
+    onUpdate,
+    onSave,
+    onCancel,
+    onAddSubmenu
+}: {
+    menuItem: NavNode;
+    onUpdate: (updates: Partial<NavNode>) => void;
+    onSave: () => void;
+    onCancel: () => void;
+    onAddSubmenu: () => void;
+}) {
+    return (
+        <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200 animate-slideDown">
+            <div className="space-y-2">
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Menu Item Label
+                    </label>
+                    <input
+                        type="text"
+                        value={menuItem.label}
+                        onChange={(e) => onUpdate({ label: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., Our Team, History"
+                        autoFocus
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Link URL
+                    </label>
+                    <input
+                        type="text"
+                        value={menuItem.href || ""}
+                        onChange={(e) => onUpdate({ href: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="/about/team or #team"
+                    />
+                </div>
+
+                {/* Add submenu button inside menu item edit form */}
+                <button
+                    onClick={onAddSubmenu}
+                    className={`w-full inline-flex items-center justify-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-all ${!menuItem.children?.length
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
+                        : 'border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                        }`}
+                >
+                    <Plus className="w-3 h-3" />
+                    {!menuItem.children?.length
+                        ? `Add submenu to "${menuItem.label}"`
+                        : `Add another submenu to "${menuItem.label}"`
+                    }
+                </button>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                    <label className="flex items-center gap-1.5">
+                        <input
+                            type="checkbox"
+                            checked={menuItem.enabled}
+                            onChange={(e) => onUpdate({ enabled: e.target.checked })}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-700">Visible</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onCancel}
+                            className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onSave}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            <Check className="w-3 h-3" />
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SubmenuEditForm({
+    submenu,
+    onUpdate,
+    onSave,
+    onCancel
+}: {
+    submenu: NavNode;
+    onUpdate: (updates: Partial<NavNode>) => void;
+    onSave: () => void;
+    onCancel: () => void;
+}) {
+    return (
+        <div className="mt-1.5 p-2 bg-gray-50 rounded-lg border border-gray-200 animate-slideDown">
+            <div className="space-y-2">
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                        Submenu Label
+                    </label>
+                    <input
+                        type="text"
+                        value={submenu.label}
+                        onChange={(e) => onUpdate({ label: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-transparent"
+                        placeholder="e.g., Team Leadership, History Timeline"
+                        autoFocus
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                        Link URL
+                    </label>
+                    <input
+                        type="text"
+                        value={submenu.href || ""}
+                        onChange={(e) => onUpdate({ href: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-transparent"
+                        placeholder="/about/team/leadership or #leadership"
+                    />
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                    <label className="flex items-center gap-1">
+                        <input
+                            type="checkbox"
+                            checked={submenu.enabled}
+                            onChange={(e) => onUpdate({ enabled: e.target.checked })}
+                            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="text-xs text-gray-700">Visible</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onCancel}
+                            className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onSave}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            <Check className="w-3 h-3" />
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/** ---------------------------------------------
+ * Level Badges for visual hierarchy
+ * --------------------------------------------- */
+function LevelBadge({ level }: { level: 1 | 2 | 3 }) {
+    const config = {
+        1: { label: "NavBar", color: "bg-red-100 text-red-700 border-red-200" },
+        2: { label: "Menu Item", color: "bg-blue-100 text-blue-700 border-blue-200" },
+        3: { label: "Submenu", color: "bg-green-100 text-green-700 border-green-200" }
+    };
+
+    return (
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs border ${config[level].color}`}>
+            {config[level].label}
+        </span>
+    );
+}
+
+/** ---------------------------------------------
+ * Main Component
  * --------------------------------------------- */
 export function NavManager() {
-    const [loading, setLoading] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-
     const [items, setItems] = useState<NavItem[]>([]);
     const [original, setOriginal] = useState<NavItem[]>([]);
-
-    // UX
     const [query, setQuery] = useState("");
-    const [open, setOpen] = useState<OpenPath>({ menuId: null, submenuId: null, pageId: null });
-
+    const [accordion, setAccordion] = useState<AccordionState>({
+        navbarItems: new Set(),
+        menuItems: new Set(),
+        editMode: null
+    });
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const toastTimers = useRef<Map<string, number>>(new Map());
 
@@ -271,806 +557,874 @@ export function NavManager() {
         setToasts((prev) => prev.filter((x) => x.id !== id));
     }, []);
 
-    const reload = useCallback(
-        async (opts?: { force?: boolean }) => {
-            if (!opts?.force && dirty) {
-                const ok = window.confirm("You have unsaved changes. Refresh will discard them. Continue?");
-                if (!ok) return;
-            }
-            setRefreshing(true);
-            try {
-                const data = await getNavigation();
-                const normalized = normalizeNav(data ?? []);
-                setItems(normalized);
-                setOriginal(structuredClone(normalized));
-                setOpen({ menuId: null, submenuId: null, pageId: null });
-                showToast("Navigation reloaded", "success");
-            } catch (e: any) {
-                console.error(e);
-                showToast(`Reload failed: ${e?.message ?? "unknown error"}`, "error");
-            } finally {
-                setRefreshing(false);
-            }
-        },
-        [dirty, showToast]
-    );
+    // Load navigation
+    const loadNavigation = useCallback(async () => {
+        try {
+            const data = await getNavigation();
+            const normalized = normalizeNav(data ?? []);
+            setItems(normalized);
+            setOriginal(structuredClone(normalized));
+            showToast("Navigation loaded", "success");
+        } catch (error: any) {
+            showToast(`Failed to load: ${error.message}`, "error");
+        }
+    }, [showToast]);
 
+    // Initial load
     useEffect(() => {
-
-        console.log("NavManager: loading navigation...");
-        (async () => {
-            setLoading(true);
-            await reload({ force: true });
-            setLoading(false);
-        })();
+        setLoading(true);
+        loadNavigation().finally(() => setLoading(false));
 
         return () => {
             toastTimers.current.forEach((t) => window.clearTimeout(t));
             toastTimers.current.clear();
         };
-    }, []);
+    }, [loadNavigation]);
 
     /** ---------------------------------------------
-     * Open/close helpers (ALWAYS resets deeper levels)
+     * Accordion Management
      * --------------------------------------------- */
-    const toggleMenu = useCallback((menuId: string) => {
-        setOpen((prev) => {
-            const isSame = prev.menuId === menuId;
-            return isSame
-                ? { menuId: null, submenuId: null, pageId: null }
-                : { menuId, submenuId: null, pageId: null };
+    const toggleNavbarItem = useCallback((navbarItemId: string) => {
+        setAccordion(prev => {
+            const newNavbarItems = new Set(prev.navbarItems);
+            if (newNavbarItems.has(navbarItemId)) {
+                newNavbarItems.delete(navbarItemId);
+                // Also close any menu items within this navbar item
+                const newMenuItems = new Set(prev.menuItems);
+                Array.from(newMenuItems).forEach(menuId => {
+                    // Find if this menu item belongs to the closing navbar item
+                    const navbarItem = items.find(n => n.id === navbarItemId);
+                    if (navbarItem?.children?.some(m => m.id === menuId)) {
+                        newMenuItems.delete(menuId);
+                    }
+                });
+                return { ...prev, navbarItems: newNavbarItems, menuItems: newMenuItems };
+            } else {
+                newNavbarItems.add(navbarItemId);
+                return { ...prev, navbarItems: newNavbarItems };
+            }
+        });
+    }, [items]);
+
+    const toggleMenuItem = useCallback((menuItemId: string) => {
+        setAccordion(prev => {
+            const newMenuItems = new Set(prev.menuItems);
+            if (newMenuItems.has(menuItemId)) {
+                newMenuItems.delete(menuItemId);
+            } else {
+                newMenuItems.add(menuItemId);
+            }
+            return { ...prev, menuItems: newMenuItems };
         });
     }, []);
 
-    const toggleSubmenu = useCallback((menuId: string, submenuId: string) => {
-        setOpen((prev) => {
-            const isSame = prev.menuId === menuId && prev.submenuId === submenuId;
-            return isSame
-                ? { menuId, submenuId: null, pageId: null }
-                : { menuId, submenuId, pageId: null };
-        });
-    }, []);
+    const isNavbarItemOpen = useCallback((navbarItemId: string) => {
+        return accordion.navbarItems.has(navbarItemId);
+    }, [accordion.navbarItems]);
+
+    const isMenuItemOpen = useCallback((menuItemId: string) => {
+        return accordion.menuItems.has(menuItemId);
+    }, [accordion.menuItems]);
 
     /** ---------------------------------------------
-     * Menu mutations (level 1)
-     * IMPORTANT: every button is type="button" already (prevents parent form submit reload)
+     * Level 1: Navbar Item Operations
      * --------------------------------------------- */
-    const onAddMenu = useCallback(() => {
-        const createdIdRef = { current: "" };
+    const addNavbarItem = useCallback(() => {
+        const used = collectIds(items);
+        const label = "New Navbar Item";
+        const id = uniqueId(slugifyId(label), used);
 
-        setItems((prev) => {
-            const used = collectIds(prev);
-            const label = "Nouveau menu";
-            const id = uniqueId(slugifyId(label) || "menu", used);
-            createdIdRef.current = id;
+        const newNavbarItem: NavItem = {
+            id,
+            label,
+            href: "/",
+            enabled: true,
+            order: items.length + 1,
+            children: []
+        };
 
-            return normalizeNav([
+        setItems(prev => normalizeNav([...prev, newNavbarItem]));
+        // Auto-open the new navbar item
+        setAccordion(prev => {
+            const newNavbarItems = new Set(prev.navbarItems);
+            newNavbarItems.add(id);
+            return {
                 ...prev,
-                { id, label, href: `#${id}`, enabled: true, order: (prev.length ?? 0) + 1, children: [] },
-            ]);
+                navbarItems: newNavbarItems,
+                editMode: { type: 'navbar', id }
+            };
+        });
+        showToast("Navbar item added", "success");
+    }, [items, showToast]);
+
+    const updateNavbarItem = useCallback((navbarItemId: string, updates: Partial<NavItem>) => {
+        setItems(prev =>
+            prev.map(item => item.id === navbarItemId ? { ...item, ...updates } : item)
+        );
+    }, []);
+
+    const deleteNavbarItem = useCallback((navbarItemId: string) => {
+        if (!window.confirm("Delete this navbar item and all its menu items?")) return;
+
+        setItems(prev => normalizeNav(prev.filter(m => m.id !== navbarItemId)));
+        // Remove from accordion state
+        setAccordion(prev => {
+            const newNavbarItems = new Set(prev.navbarItems);
+            newNavbarItems.delete(navbarItemId);
+            return { ...prev, navbarItems: newNavbarItems, editMode: null };
+        });
+        showToast("Navbar item deleted", "success");
+    }, []);
+
+    /** ---------------------------------------------
+     * Level 2: Menu Item Operations
+     * --------------------------------------------- */
+    const addMenuItem = useCallback((navbarItemId: string) => {
+        setItems(prev => {
+            const used = collectIds(prev);
+            const label = "New Menu Item";
+            const id = uniqueId(slugifyId(label), used);
+
+            return prev.map(navbarItem => {
+                if (navbarItem.id !== navbarItemId) return navbarItem;
+
+                const newMenuItem: NavNode = {
+                    id,
+                    label,
+                    href: "/",
+                    enabled: true,
+                    order: (navbarItem.children?.length || 0) + 1,
+                    children: []
+                };
+
+                const updated = {
+                    ...navbarItem,
+                    children: normalizeNodes([...(navbarItem.children || []), newMenuItem])
+                };
+
+                // Auto-open the parent navbar item and new menu item
+                setAccordion(prev => {
+                    const newNavbarItems = new Set(prev.navbarItems);
+                    newNavbarItems.add(navbarItemId);
+                    const newMenuItems = new Set(prev.menuItems);
+                    newMenuItems.add(id);
+                    return {
+                        ...prev,
+                        navbarItems: newNavbarItems,
+                        menuItems: newMenuItems,
+                        editMode: { type: 'menu', id, parentId: navbarItemId }
+                    };
+                });
+
+                return updated;
+            });
         });
 
-        queueMicrotask(() => {
-            setQuery(""); // avoid “it added but hidden by filter”
-            setOpen({ menuId: createdIdRef.current, submenuId: null, pageId: null });
-        });
-
-        showToast("Menu added", "success");
+        showToast("Menu item added", "success");
     }, [showToast]);
 
-    const onUpdateMenu = useCallback((menuId: string, patch: Partial<NavItem>) => {
-        setItems((prev) => prev.map((m) => (m.id === menuId ? { ...m, ...patch } : m)));
+    const updateMenuItem = useCallback((navbarItemId: string, menuItemId: string, updates: Partial<NavNode>) => {
+        setItems(prev =>
+            prev.map(navbarItem => {
+                if (navbarItem.id !== navbarItemId) return navbarItem;
+
+                const updatedChildren = (navbarItem.children || []).map(child =>
+                    child.id === menuItemId ? { ...child, ...updates } : child
+                );
+
+                return { ...navbarItem, children: normalizeNodes(updatedChildren) };
+            })
+        );
     }, []);
 
-    const onToggleMenuEnabled = useCallback((menuId: string, enabled: boolean) => {
-        setItems((prev) => prev.map((m) => (m.id === menuId ? { ...m, enabled } : m)));
-    }, []);
+    const deleteMenuItem = useCallback((navbarItemId: string, menuItemId: string) => {
+        if (!window.confirm("Delete this menu item and all its submenus?")) return;
 
-    const onMoveMenu = useCallback((menuId: string, dir: -1 | 1) => {
-        setItems((prev) => {
-            const idx = prev.findIndex((m) => m.id === menuId);
-            if (idx < 0) return prev;
-            const nextIdx = idx + dir;
-            if (nextIdx < 0 || nextIdx >= prev.length) return prev;
-            return normalizeNav(move(prev, idx, nextIdx));
+        setItems(prev =>
+            prev.map(navbarItem => {
+                if (navbarItem.id !== navbarItemId) return navbarItem;
+
+                const updatedChildren = (navbarItem.children || []).filter(child => child.id !== menuItemId);
+                return { ...navbarItem, children: normalizeNodes(updatedChildren) };
+            })
+        );
+
+        // Remove from accordion state
+        setAccordion(prev => {
+            const newMenuItems = new Set(prev.menuItems);
+            newMenuItems.delete(menuItemId);
+            return { ...prev, menuItems: newMenuItems, editMode: null };
         });
+        showToast("Menu item deleted", "success");
     }, []);
-
-    const onDeleteMenu = useCallback(
-        async (menuId: string) => {
-            if (!window.confirm("Delete this menu and all its submenus?")) return;
-            setDeletingId(menuId);
-            try {
-                setItems((prev) => normalizeNav(prev.filter((m) => m.id !== menuId)));
-                setOpen((prev) => (prev.menuId === menuId ? { menuId: null, submenuId: null, pageId: null } : prev));
-                showToast("Menu deleted", "success");
-            } finally {
-                setDeletingId(null);
-            }
-        },
-        [showToast]
-    );
 
     /** ---------------------------------------------
-     * Submenu mutations (level 2)
+     * Level 3: Submenu Operations
      * --------------------------------------------- */
-    const onAddSubmenu = useCallback(
-        (menuId: string) => {
-            const createdIdRef = { current: "" };
+    const addSubmenu = useCallback((navbarItemId: string, menuItemId: string) => {
+        setItems(prev => {
+            const used = collectIds(prev);
+            const label = "New Submenu";
+            const id = uniqueId(slugifyId(label), used);
 
-            setItems((prev) => {
-                const used = collectIds(prev);
-                const label = "Nouveau sous-menu";
-                const id = uniqueId(slugifyId(label) || "sous-menu", used);
-                createdIdRef.current = id;
+            return prev.map(navbarItem => {
+                if (navbarItem.id !== navbarItemId) return navbarItem;
 
-                const next = prev.map((m) => {
-                    if (m.id !== menuId) return m;
-                    const child: NavNode = {
+                const updatedChildren = (navbarItem.children || []).map(menuItem => {
+                    if (menuItem.id !== menuItemId) return menuItem;
+
+                    const newSubmenu: NavNode = {
                         id,
                         label,
-                        href: `#${id}`,
+                        href: "/",
                         enabled: true,
-                        order: (m.children?.length ?? 0) + 1,
-                        children: [],
+                        order: (menuItem.children?.length || 0) + 1
                     };
-                    return { ...m, children: normalizeNodes([...(m.children ?? []), child]) };
+
+                    return {
+                        ...menuItem,
+                        children: normalizeNodes([...(menuItem.children || []), newSubmenu])
+                    };
                 });
 
-                return normalizeNav(next);
+                return { ...navbarItem, children: normalizeNodes(updatedChildren) };
             });
+        });
 
-            queueMicrotask(() => {
-                setQuery("");
-                setOpen({ menuId, submenuId: createdIdRef.current, pageId: null });
-            });
-            console.log("Adding submenu...")
+        // Auto-open the parent menu item
+        setAccordion(prev => {
+            const newMenuItems = new Set(prev.menuItems);
+            newMenuItems.add(menuItemId);
+            return { ...prev, menuItems: newMenuItems };
+        });
 
-            showToast("Submenu added", "success");
-        },
-        [showToast]
-    );
+        showToast("Submenu added", "success");
+    }, [showToast]);
 
-    const onUpdateSubmenu = useCallback((menuId: string, submenuId: string, patch: Partial<NavNode>) => {
-        setItems((prev) =>
-            prev.map((m) => {
-                if (m.id !== menuId) return m;
-                const children = (m.children ?? []).map((c) => (c.id === submenuId ? { ...c, ...patch } : c));
-                return { ...m, children: normalizeNodes(children) };
+    const updateSubmenu = useCallback((navbarItemId: string, menuItemId: string, submenuId: string, updates: Partial<NavNode>) => {
+        setItems(prev =>
+            prev.map(navbarItem => {
+                if (navbarItem.id !== navbarItemId) return navbarItem;
+
+                const updatedChildren = (navbarItem.children || []).map(menuItem => {
+                    if (menuItem.id !== menuItemId) return menuItem;
+
+                    const updatedSubmenus = (menuItem.children || []).map(submenu =>
+                        submenu.id === submenuId ? { ...submenu, ...updates } : submenu
+                    );
+
+                    return { ...menuItem, children: normalizeNodes(updatedSubmenus) };
+                });
+
+                return { ...navbarItem, children: normalizeNodes(updatedChildren) };
             })
         );
     }, []);
 
-    const onMoveSubmenu = useCallback((menuId: string, submenuId: string, dir: -1 | 1) => {
-        setItems((prev) =>
-            prev.map((m) => {
-                if (m.id !== menuId) return m;
-                const arr = m.children ?? [];
-                const idx = arr.findIndex((c) => c.id === submenuId);
-                if (idx < 0) return m;
-                const nextIdx = idx + dir;
-                if (nextIdx < 0 || nextIdx >= arr.length) return m;
-                return { ...m, children: normalizeNodes(move(arr, idx, nextIdx)) };
+    const deleteSubmenu = useCallback((navbarItemId: string, menuItemId: string, submenuId: string) => {
+        if (!window.confirm("Delete this submenu?")) return;
+
+        setItems(prev =>
+            prev.map(navbarItem => {
+                if (navbarItem.id !== navbarItemId) return navbarItem;
+
+                const updatedChildren = (navbarItem.children || []).map(menuItem => {
+                    if (menuItem.id !== menuItemId) return menuItem;
+
+                    const updatedSubmenus = (menuItem.children || []).filter(submenu => submenu.id !== submenuId);
+                    return { ...menuItem, children: normalizeNodes(updatedSubmenus) };
+                });
+
+                return { ...navbarItem, children: normalizeNodes(updatedChildren) };
             })
         );
-    }, []);
 
-    const onDeleteSubmenu = useCallback(
-        async (menuId: string, submenuId: string) => {
-            if (!window.confirm("Delete this submenu and all its children?")) return;
-            setDeletingId(submenuId);
-            try {
-                setItems((prev) =>
-                    prev.map((m) => {
-                        if (m.id !== menuId) return m;
-                        const children = (m.children ?? []).filter((c) => c.id !== submenuId);
-                        return { ...m, children: normalizeNodes(children) };
-                    })
-                );
-                setOpen((prev) =>
-                    prev.submenuId === submenuId ? { menuId, submenuId: null, pageId: null } : prev
-                );
-                showToast("Submenu deleted", "success");
-            } finally {
-                setDeletingId(null);
-            }
-        },
-        [showToast]
-    );
+        showToast("Submenu deleted", "success");
+    }, []);
 
     /** ---------------------------------------------
-     * Sub-submenu mutations (level 3)
+     * Save & Reset
      * --------------------------------------------- */
-    const onAddSubSub = useCallback(
-        (menuId: string, submenuId: string) => {
-            const createdIdRef = { current: "" };
-
-            setItems((prev) => {
-                const used = collectIds(prev);
-                const label = "Nouvelle page";
-                const id = uniqueId(slugifyId(label) || "page", used);
-                createdIdRef.current = id;
-
-                const next = prev.map((m) => {
-                    if (m.id !== menuId) return m;
-
-                    const children = (m.children ?? []).map((sub) => {
-                        if (sub.id !== submenuId) return sub;
-                        const node: NavNode = {
-                            id,
-                            label,
-                            href: `#${id}`,
-                            enabled: true,
-                            order: (sub.children?.length ?? 0) + 1,
-                        };
-                        return { ...sub, children: normalizeNodes([...(sub.children ?? []), node]) };
-                    });
-
-                    return { ...m, children: normalizeNodes(children) };
-                });
-
-                return normalizeNav(next);
-            });
-
-            queueMicrotask(() => {
-                setQuery("");
-                setOpen({ menuId, submenuId, pageId: createdIdRef.current });
-            });
-
-            showToast("Sub-submenu added", "success");
-
-            console.log("Sub-submenu added", menuId, submenuId);
-        },
-        [showToast]
-    );
-
-    const onUpdateSubSub = useCallback((menuId: string, submenuId: string, subId: string, patch: Partial<NavNode>) => {
-        setItems((prev) =>
-            prev.map((m) => {
-                if (m.id !== menuId) return m;
-                const children = (m.children ?? []).map((sub) => {
-                    if (sub.id !== submenuId) return sub;
-                    const subs = (sub.children ?? []).map((x) => (x.id === subId ? { ...x, ...patch } : x));
-                    return { ...sub, children: normalizeNodes(subs) };
-                });
-                return { ...m, children: normalizeNodes(children) };
-            })
-        );
-    }, []);
-
-    const onMoveSubSub = useCallback((menuId: string, submenuId: string, subId: string, dir: -1 | 1) => {
-        setItems((prev) =>
-            prev.map((m) => {
-                if (m.id !== menuId) return m;
-                const children = (m.children ?? []).map((sub) => {
-                    if (sub.id !== submenuId) return sub;
-                    const arr = sub.children ?? [];
-                    const idx = arr.findIndex((x) => x.id === subId);
-                    if (idx < 0) return sub;
-                    const nextIdx = idx + dir;
-                    if (nextIdx < 0 || nextIdx >= arr.length) return sub;
-                    return { ...sub, children: normalizeNodes(move(arr, idx, nextIdx)) };
-                });
-                return { ...m, children: normalizeNodes(children) };
-            })
-        );
-    }, []);
-
-    const onDeleteSubSub = useCallback(
-        async (menuId: string, submenuId: string, subId: string) => {
-            if (!window.confirm("Delete this sub-submenu?")) return;
-            setDeletingId(subId);
-            try {
-                setItems((prev) =>
-                    prev.map((m) => {
-                        if (m.id !== menuId) return m;
-                        const children = (m.children ?? []).map((sub) => {
-                            if (sub.id !== submenuId) return sub;
-                            const arr = (sub.children ?? []).filter((x) => x.id !== subId);
-                            return { ...sub, children: normalizeNodes(arr) };
-                        });
-                        return { ...m, children: normalizeNodes(children) };
-                    })
-                );
-                setOpen((prev) => (prev.pageId === subId ? { menuId, submenuId, pageId: null } : prev));
-                showToast("Sub-submenu deleted", "success");
-            } finally {
-                setDeletingId(null);
-            }
-        },
-        [showToast]
-    );
-
-    /** ---------------------------------------------
-     * Save / Reset
-     * --------------------------------------------- */
-    const onReset = useCallback(() => {
-        if (!window.confirm("Reset all changes since last save?")) return;
-        setItems(structuredClone(original));
-        setOpen({ menuId: null, submenuId: null, pageId: null });
-        showToast("Changes reset", "info");
-    }, [original, showToast]);
-
-    const onSave = useCallback(async () => {
+    const handleSave = useCallback(async () => {
         setSaving(true);
         try {
             const normalized = normalizeNav(items);
-
-            console.log("Saving navigation...", normalized);
             await saveNavigation(normalized);
-            // setItems(normalized);
-            // setOriginal(structuredClone(normalized));
-            // showToast("Saved successfully", "success");
-        } catch (e: any) {
-            console.error(e);
-            showToast(`Save failed: ${e?.message ?? "unknown error"}`, "error");
+            setOriginal(structuredClone(normalized));
+            setAccordion(prev => ({ ...prev, editMode: null }));
+            showToast("Navigation saved successfully!", "success");
+        } catch (error: any) {
+            showToast(`Save failed: ${error.message}`, "error");
         } finally {
             setSaving(false);
         }
     }, [items, showToast]);
 
+    const handleReset = useCallback(() => {
+        if (!dirty || !window.confirm("Discard all changes?")) return;
+        setItems(structuredClone(original));
+        setAccordion({ navbarItems: new Set(), menuItems: new Set(), editMode: null });
+        showToast("Changes discarded", "info");
+    }, [dirty, original, showToast]);
+
+    const handleRefresh = useCallback(async () => {
+        if (dirty && !window.confirm("You have unsaved changes. Refresh anyway?")) return;
+
+        setLoading(true);
+        await loadNavigation();
+        setLoading(false);
+        setAccordion({ navbarItems: new Set(), menuItems: new Set(), editMode: null });
+    }, [dirty, loadNavigation]);
+
+    // Function to save a single navbar item immediately
+    const handleSaveItem = useCallback(async (navbarItem: NavItem) => {
+        try {
+            // Find the item in the current items array
+            const updatedItems = items.map(item =>
+                item.id === navbarItem.id ? navbarItem : item
+            );
+
+            // Save to Firestore
+            await saveNavigation(normalizeNav(updatedItems));
+
+            // Update local state
+            setItems(updatedItems);
+            setOriginal(structuredClone(updatedItems));
+            setAccordion(prev => ({ ...prev, editMode: null }));
+
+            showToast("Item saved successfully", "success");
+        } catch (error: any) {
+            showToast(`Failed to save item: ${error.message}`, "error");
+        }
+    }, [items, showToast]);
+
     /** ---------------------------------------------
-     * Filtering (display-only)
+     * Filtering
      * --------------------------------------------- */
     const filteredItems = useMemo(() => {
-        const q = query.trim();
-        if (!q) return items;
+        if (!query.trim()) return items;
 
+        const q = query.toLowerCase();
         return items
-            .map((menu) => {
-                const menuMatches = contains(q, menu.label) || contains(q, menu.href) || contains(q, menu.id);
+            .map(navbarItem => {
+                const navbarMatches =
+                    navbarItem.label.toLowerCase().includes(q) ||
+                    navbarItem.href?.toLowerCase().includes(q) ||
+                    navbarItem.id.toLowerCase().includes(q);
 
-                const children = (menu.children ?? [])
-                    .map((sub) => {
-                        const subMatches = contains(q, sub.label) || contains(q, sub.href) || contains(q, sub.id);
+                const filteredMenuItems = (navbarItem.children || [])
+                    .map(menuItem => {
+                        const menuMatches =
+                            menuItem.label.toLowerCase().includes(q) ||
+                            menuItem.href?.toLowerCase().includes(q) ||
+                            menuItem.id.toLowerCase().includes(q);
 
-                        const subs = (sub.children ?? []).filter(
-                            (x) => contains(q, x.label) || contains(q, x.href) || contains(q, x.id)
-                        );
+                        const filteredSubmenus = (menuItem.children || [])
+                            .filter(submenu =>
+                                submenu.label.toLowerCase().includes(q) ||
+                                submenu.href?.toLowerCase().includes(q) ||
+                                submenu.id.toLowerCase().includes(q)
+                            );
 
-                        if (!subMatches && subs.length === 0) return null;
-                        return { ...sub, children: subs };
+                        if (!menuMatches && filteredSubmenus.length === 0) return null;
+                        return { ...menuItem, children: filteredSubmenus };
                     })
                     .filter(Boolean) as NavNode[];
 
-                if (!menuMatches && children.length === 0) return null;
-                return { ...menu, children };
+                if (!navbarMatches && filteredMenuItems.length === 0) return null;
+                return { ...navbarItem, children: filteredMenuItems };
             })
             .filter(Boolean) as NavItem[];
     }, [items, query]);
 
     /** ---------------------------------------------
-     * Shortcuts
+     * Keyboard Shortcuts
      * --------------------------------------------- */
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => {
-            if (!e.ctrlKey && !e.metaKey) return;
-            const k = e.key.toLowerCase();
-            if (k === "s") {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                if (dirty) onSave();
-            }
-            if (k === "r") {
-                e.preventDefault();
-                reload();
+                if (dirty) handleSave();
             }
         };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [dirty, onSave, reload]);
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [dirty, handleSave]);
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[300px]">
-                <Loader size="md" text="Loading navigation..." />
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <div className="w-12 h-12 border-4 border-gray-200 border-t-red-600 rounded-full animate-spin" />
+                <p className="text-gray-600">Loading navigation...</p>
             </div>
         );
     }
 
-    /** ---------------------------------------------
-     * Render
-     * --------------------------------------------- */
     return (
-        <div className="space-y-6">
-            {/* Toolbar */}
-            <div className="sticky top-0 z-20 border-b bg-white/95 px-4 py-4 backdrop-blur">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <div className="relative flex-1 max-w-md">
-                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                ⌕
-                            </span>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+            {/* Header */}
+            <div className="mb-8">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                            <Layers className="w-8 h-8 text-red-600" />
+                            Navigation Manager
+                        </h1>
+                        <p className="text-gray-600 mt-1">
+                            Manage your site's navigation structure with 3-level hierarchy
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
+                                type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search menus, submenus, pages..."
-                                className="w-full rounded-lg border bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                                placeholder="Search navigation items..."
+                                className="pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-white w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             />
-                            {query ? (
+                            {query && (
                                 <button
-                                    type="button"
                                     onClick={() => setQuery("")}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                    aria-label="Clear search"
                                 >
-                                    ✕
+                                    <X className="w-4 h-4" />
                                 </button>
-                            ) : null}
+                            )}
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
-                            {dirty ? (
-                                <Badge tone="warn" className="animate-pulse">
-                                    Unsaved
-                                </Badge>
-                            ) : (
-                                <Badge tone="ok">Saved</Badge>
-                            )}
-                            {refreshing ? <Badge tone="muted">Refreshing…</Badge> : null}
-                            {saving ? <Badge tone="muted">Saving…</Badge> : null}
-                            <Badge tone="muted">
-                                {items.length} menu{items.length !== 1 ? "s" : ""}
-                            </Badge>
+                        <ActionButton
+                            icon={RefreshCw}
+                            label="Refresh"
+                            onClick={handleRefresh}
+                            disabled={loading}
+                            loading={loading}
+                            variant="ghost"
+                        />
+                    </div>
+                </div>
+
+                {/* Status Bar with Level Indicators */}
+                <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm mb-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${dirty ? 'animate-pulse bg-amber-500' : 'bg-green-500'}`} />
+                            <span className="text-sm font-medium">
+                                {dirty ? 'Unsaved changes' : 'All changes saved'}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-6 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                                <MenuIcon className="w-4 h-4 text-red-600" />
+                                <span>{items.length} navbar items</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Folder className="w-4 h-4 text-blue-600" />
+                                <span>{items.reduce((acc, n) => acc + (n.children?.length || 0), 0)} menu items</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <File className="w-4 h-4 text-green-600" />
+                                <span>{items.reduce((acc, n) => acc + (n.children?.reduce((sum, m) => sum + (m.children?.length || 0), 0) || 0), 0)} submenus</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={onAddMenu}
-                            className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 active:scale-95 transition-all"
-                        >
-                            + Add menu
-                        </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <ActionButton
+                            icon={Plus}
+                            label="Add Navbar Item"
+                            onClick={addNavbarItem}
+                            variant="primary"
+                        />
 
-                        <button
-                            type="button"
-                            onClick={() => reload()}
-                            disabled={saving || refreshing}
-                            className="rounded-lg border px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 disabled:opacity-50"
-                        >
-                            {refreshing ? <Loader size="sm" /> : "Refresh"}
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={onReset}
+                        <ActionButton
+                            icon={Save}
+                            label={saving ? "Saving..." : "Save All"}
+                            onClick={handleSave}
                             disabled={!dirty || saving}
-                            className="rounded-lg border px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 disabled:opacity-50"
+                            loading={saving}
+                        />
+
+                        <button
+                            onClick={handleReset}
+                            disabled={!dirty || saving}
+                            className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             Reset
-                        </button>
-
-                        <button
-                            type="button"
-                            disabled={saving || !dirty}
-                            onClick={onSave}
-                            className="rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:from-red-700 hover:to-red-800 disabled:opacity-60"
-                        >
-                            {saving ? <Loader size="sm" text="Saving..." /> : "Save Changes"}
                         </button>
                     </div>
                 </div>
 
-                {toasts.length ? (
-                    <div className="absolute bottom-full left-0 right-0 mb-2 space-y-2 px-4">
-                        {toasts.map((t) => (
-                            <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />
-                        ))}
+                {/* Hierarchy Guide */}
+                <div className="flex flex-wrap items-center justify-center gap-6 p-3 bg-white/80 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                            <MenuIcon className="w-4 h-4 text-red-600" />
+                        </div>
+                        <div>
+                            <div className="text-xs font-semibold text-gray-900">NavBar Items</div>
+                            <div className="text-xs text-gray-500">Top-level (About, Services)</div>
+                        </div>
                     </div>
-                ) : null}
+                    <div className="text-gray-300">→</div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <Folder className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                            <div className="text-xs font-semibold text-gray-900">Menu Items</div>
+                            <div className="text-xs text-gray-500">Second-level (Our Team, History)</div>
+                        </div>
+                    </div>
+                    <div className="text-gray-300">→</div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                            <File className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div>
+                            <div className="text-xs font-semibold text-gray-900">Submenus</div>
+                            <div className="text-xs text-gray-500">Third-level (Team Leadership)</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* List */}
-            <div className="space-y-4 px-4">
+            {/* Main Content */}
+            <div>
                 {filteredItems.length === 0 ? (
                     <EmptyState
-                        icon="🔍"
-                        title="No matches found"
-                        description={query ? `No menus match "${query}"` : "No items"}
+                        icon={<MenuIcon className="w-12 h-12 mx-auto text-gray-400" />}
+                        title={query ? "No matching items found" : "No navbar items yet"}
+                        description={query ? `Try a different search term` : "Start by adding your first navbar item"}
                         action={
                             <button
-                                type="button"
-                                className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50"
-                                onClick={() => setQuery("")}
+                                onClick={addNavbarItem}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
                             >
-                                Clear search
+                                <Plus className="w-4 h-4" />
+                                Add First Navbar Item
                             </button>
                         }
+                        size="lg"
                     />
-                ) : null}
+                ) : (
+                    <div className="space-y-4">
+                        {filteredItems.map((navbarItem, index) => (
+                            <div key={navbarItem.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200">
+                                {/* Level 1: Navbar Item */}
+                                <div className="p-4 border-b border-gray-100">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <button
+                                                onClick={() => toggleNavbarItem(navbarItem.id)}
+                                                className="flex-shrink-0 text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors group"
+                                                title={navbarItem.children?.length ? `${navbarItem.children.length} menu items - Click to expand` : "No menu items"}
+                                            >
+                                                {navbarItem.children?.length ? (
+                                                    isNavbarItemOpen(navbarItem.id) ? (
+                                                        <ChevronDown className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                                    ) : (
+                                                        <ChevronRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                                    )
+                                                ) : (
+                                                    <div className="w-4 h-4 flex items-center justify-center text-gray-300">
+                                                        –
+                                                    </div>
+                                                )}
+                                            </button>
 
-                {filteredItems.map((menu) => {
-                    const menuOpen = open.menuId === menu.id;
-                    const deletingMenu = deletingId === menu.id;
-
-                    return (
-                        <div key={menu.id} className="rounded-xl border bg-white shadow-sm hover:shadow-md transition-all">
-                            {/* Menu header */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4">
-                                <div className="flex flex-1 items-center gap-3 min-w-0">
-                                    <input
-                                        type="checkbox"
-                                        checked={menu.enabled !== false}
-                                        onChange={(e) => onToggleMenuEnabled(menu.id, e.target.checked)}
-                                        className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                                        disabled={deletingMenu}
-                                    />
-
-                                    <button
-                                        type="button"
-                                        className="flex-1 text-left min-w-0"
-                                        onClick={() => toggleMenu(menu.id)}
-                                        disabled={deletingMenu}
-                                    >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span className="text-sm font-semibold text-gray-900 truncate">{menu.label}</span>
-                                            {menu.enabled === false ? <Badge tone="muted">Disabled</Badge> : null}
-                                        </div>
-                                        <div className="text-xs text-gray-500 truncate mt-1">
-                                            {menu.href ?? ""} <span className="text-gray-400 hidden md:inline"> • #{menu.id}</span>
-                                        </div>
-                                    </button>
-
-                                    <span className="text-gray-400">{menuOpen ? "▴" : "▾"}</span>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <IconButton title="Move up" onClick={() => onMoveMenu(menu.id, -1)} disabled={deletingMenu}>
-                                        ↑
-                                    </IconButton>
-                                    <IconButton title="Move down" onClick={() => onMoveMenu(menu.id, +1)} disabled={deletingMenu}>
-                                        ↓
-                                    </IconButton>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => onDeleteMenu(menu.id)}
-                                        disabled={deletingMenu}
-                                        className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
-                                    >
-                                        {deletingMenu ? <Loader size="sm" /> : "Delete"}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Menu body */}
-                            {menuOpen ? (
-                                <div className="border-t px-5 py-6 bg-gray-50/50 space-y-6">
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">Menu label *</label>
-                                            <input
-                                                value={menu.label}
-                                                onChange={(e) => onUpdateMenu(menu.id, { label: e.target.value })}
-                                                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className={`w-2 h-2 rounded-full ${navbarItem.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                    <LevelBadge level={1} />
+                                                    <span className="font-semibold text-gray-900 truncate">{navbarItem.label}</span>
+                                                    {navbarItem.children?.length ? (
+                                                        <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+                                                            {navbarItem.children.length}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                                                    {navbarItem.href?.startsWith('#') ? (
+                                                        <Hash className="w-3 h-3 flex-shrink-0" />
+                                                    ) : navbarItem.href?.startsWith('http') ? (
+                                                        <Globe className="w-3 h-3 flex-shrink-0" />
+                                                    ) : (
+                                                        <Link className="w-3 h-3 flex-shrink-0" />
+                                                    )}
+                                                    <span className="truncate">{navbarItem.href || "No link"}</span>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">Href *</label>
-                                            <input
-                                                value={menu.href ?? ""}
-                                                onChange={(e) => onUpdateMenu(menu.id, { href: e.target.value })}
-                                                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                                                placeholder="#section or /page"
-                                            />
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <button
+                                                onClick={() => setAccordion(prev => ({
+                                                    ...prev,
+                                                    editMode: prev.editMode?.id === navbarItem.id ? null : { type: 'navbar', id: navbarItem.id }
+                                                }))}
+                                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="Edit navbar item"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+
+                                            <button
+                                                onClick={() => addMenuItem(navbarItem.id)}
+                                                className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                title="Add menu item"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+
+                                            <button
+                                                onClick={() => deleteNavbarItem(navbarItem.id)}
+                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete navbar item"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Level 2 */}
-                                    <div className="pt-4 border-t">
-                                        <div className="flex items-center justify-between gap-3 mb-4">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-900">Submenus (Level 2)</h3>
-                                                <p className="text-xs text-gray-500">{menu.children?.length ?? 0} submenu(s)</p>
-                                            </div>
+                                    {/* Navbar Item Edit Form */}
+                                    {accordion.editMode?.type === 'navbar' && accordion.editMode.id === navbarItem.id && (
+                                        <NavbarItemEditForm
+                                            navbarItem={navbarItem}
+                                            onUpdate={(updates) => updateNavbarItem(navbarItem.id, updates)}
+                                            onSave={() => handleSaveItem(navbarItem)}
+                                            onCancel={() => setAccordion(prev => ({ ...prev, editMode: null }))}
+                                            onAddMenuItem={() => {
+                                                addMenuItem(navbarItem.id);
+                                                setAccordion(prev => ({ ...prev, editMode: null }));
+                                            }}
+                                        />
+                                    )}
+                                </div>
 
+                                {/* Level 2: Menu Items (only shown if navbar item is open) */}
+                                {isNavbarItemOpen(navbarItem.id) && navbarItem.children && navbarItem.children.length > 0 && (
+                                    <div className="bg-gray-50 p-4 border-t border-gray-100">
+                                        <div className="mb-3 flex items-center justify-between">
+                                            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                                <Folder className="w-4 h-4 text-blue-600" />
+                                                Menu Items under "{navbarItem.label}"
+                                            </h4>
                                             <button
-                                                type="button"
-                                                onClick={() => onAddSubmenu(menu.id)}
-                                                className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-50"
+                                                onClick={() => addMenuItem(navbarItem.id)}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 hover:text-gray-900 bg-white border border-gray-300 rounded-lg hover:border-gray-400"
                                             >
-                                                + Add submenu
+                                                <Plus className="w-3 h-3" />
+                                                Add Menu Item
                                             </button>
                                         </div>
 
-                                        {(menu.children?.length ?? 0) === 0 ? (
-                                            <EmptyState
-                                                icon="📄"
-                                                title="No submenus"
-                                                description="Add submenus to organize your content"
-                                                action={
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onAddSubmenu(menu.id)}
-                                                        className="rounded-md border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
-                                                    >
-                                                        Add first submenu
-                                                    </button>
-                                                }
-                                            />
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {(menu.children ?? []).map((sub) => {
-                                                    const subOpen = open.menuId === menu.id && open.submenuId === sub.id;
-                                                    const deletingSub = deletingId === sub.id;
-
-                                                    return (
-                                                        <div key={sub.id} className="rounded-lg border bg-white p-4 hover:border-gray-400 transition-colors">
-                                                            {/* Sub header */}
-                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                                                                <div className="flex flex-1 items-center gap-3 min-w-0">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={sub.enabled !== false}
-                                                                        onChange={(e) => onUpdateSubmenu(menu.id, sub.id, { enabled: e.target.checked })}
-                                                                        className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                                                                        disabled={deletingSub}
-                                                                    />
-
-                                                                    <button
-                                                                        type="button"
-                                                                        className="flex-1 text-left min-w-0"
-                                                                        onClick={() => toggleSubmenu(menu.id, sub.id)}
-                                                                        disabled={deletingSub}
-                                                                    >
-                                                                        <div className="flex items-center gap-2 min-w-0">
-                                                                            <span className="text-sm font-medium text-gray-900 truncate">{sub.label}</span>
-                                                                            {sub.enabled === false ? <Badge tone="muted">Disabled</Badge> : null}
-                                                                        </div>
-                                                                        <div className="text-xs text-gray-500 truncate mt-1">
-                                                                            {sub.href} <span className="text-gray-400">• #{sub.id}</span>
-                                                                        </div>
-                                                                    </button>
-
-                                                                    <span className="text-gray-400">{subOpen ? "▴" : "▾"}</span>
-                                                                </div>
-
-                                                                <div className="flex items-center gap-2">
-                                                                    <IconButton title="Move up" onClick={() => onMoveSubmenu(menu.id, sub.id, -1)} disabled={deletingSub}>
-                                                                        ↑
-                                                                    </IconButton>
-                                                                    <IconButton title="Move down" onClick={() => onMoveSubmenu(menu.id, sub.id, +1)} disabled={deletingSub}>
-                                                                        ↓
-                                                                    </IconButton>
-
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => onDeleteSubmenu(menu.id, sub.id)}
-                                                                        disabled={deletingSub}
-                                                                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
-                                                                    >
-                                                                        {deletingSub ? <Loader size="sm" /> : "Delete"}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Sub details */}
-                                                            <div className="grid gap-3 sm:grid-cols-2">
-                                                                <div>
-                                                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Submenu label</label>
-                                                                    <input
-                                                                        value={sub.label}
-                                                                        onChange={(e) => onUpdateSubmenu(menu.id, sub.id, { label: e.target.value })}
-                                                                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Href</label>
-                                                                    <input
-                                                                        value={sub.href ?? ""}
-                                                                        onChange={(e) => onUpdateSubmenu(menu.id, sub.id, { href: e.target.value })}
-                                                                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Level 3 */}
-                                                            {subOpen ? (
-                                                                <div className="border-t mt-4 pt-4">
-                                                                    <div className="flex items-center justify-between gap-3 mb-3">
-                                                                        <div>
-                                                                            <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wide">
-                                                                                Sub-submenus (Level 3)
-                                                                            </h4>
-                                                                            <p className="text-xs text-gray-500">{sub.children?.length ?? 0} item(s)</p>
-                                                                        </div>
-
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => onAddSubSub(menu.id, sub.id)}
-                                                                            className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold hover:bg-gray-50"
-                                                                        >
-                                                                            + Add sub-submenu
-                                                                        </button>
-                                                                    </div>
-
-                                                                    {(sub.children?.length ?? 0) === 0 ? (
-                                                                        <EmptyState
-                                                                            icon="🧩"
-                                                                            title="No sub-submenus"
-                                                                            description="Add a third-level item"
-                                                                            action={
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => onAddSubSub(menu.id, sub.id)}
-                                                                                    className="rounded-md border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
-                                                                                >
-                                                                                    Add first sub-submenu
-                                                                                </button>
-                                                                            }
-                                                                        />
+                                        <div className="space-y-2">
+                                            {navbarItem.children.map((menuItem, menuIndex) => (
+                                                <div key={menuItem.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors">
+                                                    {/* Level 2: Menu Item Header */}
+                                                    <div className="p-3">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <button
+                                                                    onClick={() => toggleMenuItem(menuItem.id)}
+                                                                    className="flex-shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors group"
+                                                                    title={menuItem.children?.length ? `${menuItem.children.length} submenus - Click to expand` : "No submenus"}
+                                                                >
+                                                                    {menuItem.children?.length ? (
+                                                                        isMenuItemOpen(menuItem.id) ? (
+                                                                            <ChevronDown className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                                                                        ) : (
+                                                                            <ChevronRight className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                                                                        )
                                                                     ) : (
-                                                                        <div className="space-y-2">
-                                                                            {(sub.children ?? []).map((x) => {
-                                                                                const deletingX = deletingId === x.id;
-                                                                                return (
-                                                                                    <div key={x.id} className="rounded-md border bg-gray-50 p-3">
-                                                                                        <div className="flex items-center justify-between gap-2">
-                                                                                            <div className="flex items-center gap-2 min-w-0">
-                                                                                                <input
-                                                                                                    type="checkbox"
-                                                                                                    checked={x.enabled !== false}
-                                                                                                    onChange={(e) => onUpdateSubSub(menu.id, sub.id, x.id, { enabled: e.target.checked })}
-                                                                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                                                                                                    disabled={deletingX}
-                                                                                                />
-                                                                                                <span className="text-xs text-gray-500 truncate">#{x.id}</span>
-                                                                                            </div>
-
-                                                                                            <div className="flex items-center gap-1">
-                                                                                                <IconButton title="Up" onClick={() => onMoveSubSub(menu.id, sub.id, x.id, -1)} disabled={deletingX} className="h-7 w-7">
-                                                                                                    ↑
-                                                                                                </IconButton>
-                                                                                                <IconButton title="Down" onClick={() => onMoveSubSub(menu.id, sub.id, x.id, +1)} disabled={deletingX} className="h-7 w-7">
-                                                                                                    ↓
-                                                                                                </IconButton>
-
-                                                                                                <button
-                                                                                                    type="button"
-                                                                                                    onClick={() => onDeleteSubSub(menu.id, sub.id, x.id)}
-                                                                                                    disabled={deletingX}
-                                                                                                    className="rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
-                                                                                                >
-                                                                                                    {deletingX ? <Loader size="sm" /> : "Delete"}
-                                                                                                </button>
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                                                                                            <input
-                                                                                                value={x.label}
-                                                                                                onChange={(e) => onUpdateSubSub(menu.id, sub.id, x.id, { label: e.target.value })}
-                                                                                                className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                                                                                                placeholder="Label"
-                                                                                            />
-                                                                                            <input
-                                                                                                value={x.href ?? ""}
-                                                                                                onChange={(e) => onUpdateSubSub(menu.id, sub.id, x.id, { href: e.target.value })}
-                                                                                                className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                                                                                                placeholder="#anchor or /route"
-                                                                                            />
-                                                                                        </div>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
+                                                                        <div className="w-3 h-3 flex items-center justify-center text-gray-300">
+                                                                            –
                                                                         </div>
                                                                     )}
+                                                                </button>
+
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                                        <div className={`w-1.5 h-1.5 rounded-full ${menuItem.enabled ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                                                                        <LevelBadge level={2} />
+                                                                        <span className="text-sm font-medium text-gray-900 truncate">{menuItem.label}</span>
+                                                                        {menuItem.children?.length ? (
+                                                                            <span className="text-xs px-1 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                                                                {menuItem.children.length}
+                                                                            </span>
+                                                                        ) : null}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                                                                        {menuItem.href?.startsWith('#') ? (
+                                                                            <Hash className="w-2.5 h-2.5 flex-shrink-0" />
+                                                                        ) : menuItem.href?.startsWith('http') ? (
+                                                                            <Globe className="w-2.5 h-2.5 flex-shrink-0" />
+                                                                        ) : (
+                                                                            <Link className="w-2.5 h-2.5 flex-shrink-0" />
+                                                                        )}
+                                                                        <span className="truncate">{menuItem.href || "No link"}</span>
+                                                                    </div>
                                                                 </div>
-                                                            ) : null}
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                                <button
+                                                                    onClick={() => setAccordion(prev => ({
+                                                                        ...prev,
+                                                                        editMode: prev.editMode?.id === menuItem.id ? null : {
+                                                                            type: 'menu',
+                                                                            id: menuItem.id,
+                                                                            parentId: navbarItem.id
+                                                                        }
+                                                                    }))}
+                                                                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                                    title="Edit menu item"
+                                                                >
+                                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                                </button>
+
+                                                                <button
+                                                                    onClick={() => addSubmenu(navbarItem.id, menuItem.id)}
+                                                                    className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                                    title="Add submenu"
+                                                                >
+                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                </button>
+
+                                                                <button
+                                                                    onClick={() => deleteMenuItem(navbarItem.id, menuItem.id)}
+                                                                    className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                                    title="Delete menu item"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+
+                                                        {/* Menu Item Edit Form */}
+                                                        {accordion.editMode?.type === 'menu' && accordion.editMode.id === menuItem.id && (
+                                                            <MenuItemEditForm
+                                                                menuItem={menuItem}
+                                                                onUpdate={(updates) => updateMenuItem(navbarItem.id, menuItem.id, updates)}
+                                                                onSave={() => handleSaveItem(navbarItem)}
+                                                                onCancel={() => setAccordion(prev => ({ ...prev, editMode: null }))}
+                                                                onAddSubmenu={() => {
+                                                                    addSubmenu(navbarItem.id, menuItem.id);
+                                                                    setAccordion(prev => ({ ...prev, editMode: null }));
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+
+                                                    {/* Level 3: Submenus (only shown if menu item is open) */}
+                                                    {isMenuItemOpen(menuItem.id) && menuItem.children && menuItem.children.length > 0 && (
+                                                        <div className="border-t border-gray-200 bg-gray-50 p-3">
+                                                            <div className="mb-2 flex items-center justify-between">
+                                                                <h5 className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                                                                    <File className="w-3 h-3 text-green-600" />
+                                                                    Submenus under "{menuItem.label}"
+                                                                </h5>
+                                                                <button
+                                                                    onClick={() => addSubmenu(navbarItem.id, menuItem.id)}
+                                                                    className="text-xs px-2 py-0.5 text-gray-600 hover:text-gray-900 bg-white border border-gray-300 rounded hover:border-gray-400"
+                                                                >
+                                                                    + Add Submenu
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="space-y-1.5">
+                                                                {menuItem.children.map((submenu) => (
+                                                                    <div key={submenu.id} className="bg-white rounded border border-gray-200 p-2 hover:bg-gray-50 transition-colors">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <div className="flex items-center gap-2 flex-1">
+                                                                                <div className={`w-1.5 h-1.5 rounded-full ${submenu.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                                                <LevelBadge level={3} />
+                                                                                <span className="text-xs text-gray-900 truncate">{submenu.label}</span>
+                                                                                <span className="text-xs text-gray-400 truncate hidden sm:inline">{submenu.href}</span>
+                                                                            </div>
+
+                                                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                                                <button
+                                                                                    onClick={() => setAccordion(prev => ({
+                                                                                        ...prev,
+                                                                                        editMode: { type: 'submenu', id: submenu.id, parentId: menuItem.id }
+                                                                                    }))}
+                                                                                    className="p-0.5 text-gray-400 hover:text-blue-600"
+                                                                                    title="Edit submenu"
+                                                                                >
+                                                                                    <Edit2 className="w-3 h-3" />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => deleteSubmenu(navbarItem.id, menuItem.id, submenu.id)}
+                                                                                    className="p-0.5 text-gray-400 hover:text-red-600"
+                                                                                    title="Delete submenu"
+                                                                                >
+                                                                                    <Trash2 className="w-3 h-3" />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Submenu Edit Form */}
+                                                                        {accordion.editMode?.type === 'submenu' && accordion.editMode.id === submenu.id && (
+                                                                            <SubmenuEditForm
+                                                                                submenu={submenu}
+                                                                                onUpdate={(updates) => updateSubmenu(navbarItem.id, menuItem.id, submenu.id, updates)}
+                                                                                onSave={() => handleSaveItem(navbarItem)}
+                                                                                onCancel={() => setAccordion(prev => ({ ...prev, editMode: null }))}
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ) : null}
-                        </div>
-                    );
-                })}
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
+
+            {/* Toasts */}
+            {toasts.length > 0 && (
+                <div className="fixed bottom-4 right-4 z-50 space-y-2 w-full max-w-sm">
+                    {toasts.map((toast) => (
+                        <Toast
+                            key={toast.id}
+                            message={toast.message}
+                            type={toast.type}
+                            onClose={() => removeToast(toast.id)}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* CSS Animations */}
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-10px); max-height: 0; }
+                    to { opacity: 1; transform: translateY(0); max-height: 500px; }
+                }
+                .animate-fadeIn {
+                    animation: fadeIn 0.2s ease-out;
+                }
+                .animate-slideDown {
+                    animation: slideDown 0.2s ease-out;
+                }
+            `}</style>
         </div>
     );
 }

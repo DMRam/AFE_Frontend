@@ -27,7 +27,8 @@ export type AdminSectionId =
     | "events"
     | "footer"
     | "settings"
-    | "campaigns";
+    | "campaigns"
+    | "activity";
 
 type UserInfo = {
     name: string;
@@ -70,6 +71,7 @@ export function AdminLayout({
             { id: "events", label: "A & E", icon: CalendarDays, badge: "Next" },
             { id: "footer", label: "Footer", icon: PanelBottom, badge: "Next" },
             { id: "campaigns", label: "Campaigns", icon: UploadCloud, badge: "Next" },
+            { id: "activity", label: "Activity", icon: Eye, badge: "Next" },
             { id: "settings", label: "Settings", icon: Settings, badge: "Next" },
         ],
         []
