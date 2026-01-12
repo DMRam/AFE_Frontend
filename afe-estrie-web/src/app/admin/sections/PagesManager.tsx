@@ -9,6 +9,7 @@ import {
 
 // ✅ add this (you said the other stuff is done)
 import { uploadImage } from "../../../services/storageRepo";
+import { NewPageButton } from "../pages/NewPageButton";
 
 type EditorMode = "simple" | "json";
 
@@ -135,25 +136,48 @@ export const PagesManager = () => {
     const splitFileRef = useRef<HTMLInputElement | null>(null);
 
     // Load list
-    useEffect(() => {
-        (async () => {
-            setLoadingList(true);
-            setError("");
-            try {
-                const items = await listPages();
-                setPages(items);
+    // useEffect(() => {
+    //     (async () => {
+    //         setLoadingList(true);
+    //         setError("");
+    //         try {
+    //             const items = await listPages();
+    //             setPages(items);
 
-                if (items.length) {
-                    const firstDocId = pageDocIdFromPageId(items[0].id);
-                    setSelectedDocId(firstDocId);
-                }
-            } catch (e: any) {
-                setError(e?.message ?? "Failed to load pages list");
-            } finally {
-                setLoadingList(false);
-            }
-        })();
+    //             if (items.length) {
+    //                 const firstDocId = pageDocIdFromPageId(items[0].id);
+    //                 setSelectedDocId(firstDocId);
+    //             }
+    //         } catch (e: any) {
+    //             setError(e?.message ?? "Failed to load pages list");
+    //         } finally {
+    //             setLoadingList(false);
+    //         }
+    //     })();
+    // }, []);
+
+    useEffect(() => {
+        void reloadPagesList(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+
+    async function reloadPagesList(selectFirst = false) {
+        setLoadingList(true);
+        setError("");
+        try {
+            const items = await listPages();
+            setPages(items);
+            if (selectFirst && items.length) {
+                setSelectedDocId(pageDocIdFromPageId(items[0].id));
+            }
+        } catch (e: any) {
+            setError(e?.message ?? "Failed to load pages list");
+        } finally {
+            setLoadingList(false);
+        }
+    }
+
 
     // Load selected page
     useEffect(() => {
@@ -446,6 +470,7 @@ export const PagesManager = () => {
                                 >
                                     JSON
                                 </button>
+
                             </div>
 
                             <button
@@ -457,8 +482,19 @@ export const PagesManager = () => {
                             >
                                 {saving ? "Saving…" : "Save"}
                             </button>
+
                         </div>
+                        
+
                     </div>
+
+                    <div className="flex items-center justify-between border-b px-4 py-3">
+                            <div className="text-sm font-semibold text-gray-900">Pages</div>
+                            <NewPageButton
+                                onRefreshList={() => reloadPagesList(false)}
+                                onCreated={(docId) => setSelectedDocId(docId)}
+                            />
+                        </div>
 
                     {loadingPage ? (
                         <div className="p-4 text-sm text-gray-500">Loading page…</div>

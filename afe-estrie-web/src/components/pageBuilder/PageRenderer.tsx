@@ -3,7 +3,7 @@ import type { PageSection } from "../../content/types/pageBlocks";
 import { HeroSectionView } from "./sections/HeroSectionView";
 import { RichTextSectionView } from "./sections/RichTextSectionView";
 import { SplitTextImageSectionView } from "./sections/SplitTextImageSectionView";
-import { TeamSectionView } from "./sections/TeamSectionView";
+// import { TeamSectionView } from "./sections/TeamSectionView";
 
 export function PageRenderer({ sections }: { sections: PageSection[] }) {
   return (
@@ -26,9 +26,7 @@ export function PageRenderer({ sections }: { sections: PageSection[] }) {
                 <RichTextSectionView data={s} />
               ) : s.type === "split" ? (
                 <SplitTextImageSectionView data={s} />
-              ) : s.type === "team" ? (
-                <TeamSectionView data={s} />
-              ) : null}
+              )  : null}
             </SectionShell>
           );
         })}

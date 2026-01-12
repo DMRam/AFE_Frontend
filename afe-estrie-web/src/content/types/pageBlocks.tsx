@@ -9,8 +9,7 @@ export type PageDoc = {
 export type PageSection =
   | HeroSection
   | RichTextSection
-  | SplitTextImageSection
-  | TeamSection;
+  | SplitTextImageSection;
 
 export type HeroSection = {
   type: "hero";
@@ -40,19 +39,4 @@ export type SplitTextImageSection = {
   imageAlt?: string;
   imageSide?: "left" | "right";
   variant?: "default" | "soft";
-};
-
-export type TeamSection = {
-  type: "team";
-  id: string;
-  enabled?: boolean;
-  title?: string;
-  variant?: "default" | "soft";
-  members: Array<{
-    name: string;
-    role?: string;     
-    bio?: string;
-    email?: string;
-    imageUrl?: string;
-  }>;
 };
