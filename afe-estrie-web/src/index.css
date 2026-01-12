@@ -3,6 +3,23 @@
 /* Cap hero title height without ellipsis */
 .hero-title {
   line-height: 1.05;
-  max-height: calc(1.05em * 4); /* 4 lines max */
+  max-height: calc(1.05em * 4);
+  /* 4 lines max */
   overflow: hidden;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
 }

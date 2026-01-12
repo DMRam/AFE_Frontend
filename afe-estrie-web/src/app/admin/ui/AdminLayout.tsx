@@ -17,6 +17,8 @@ import {
     LogOut,
     ChevronDown,
 } from "lucide-react";
+import { seedEnBrefPage } from "../../../scripts/seedPages";
+import { seedEquipePage } from "../../../scripts/seedEquipePage";
 
 
 export type AdminSectionId =
@@ -194,6 +196,10 @@ export function AdminLayout({
                                 >
                                     <UploadCloud className="h-4 w-4" /> Publish
                                 </button>
+
+                                <button onClick={seedEquipePage}>Seed “Équipe” page</button>
+
+
 
                             </div>
                         </div>

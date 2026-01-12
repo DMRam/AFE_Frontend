@@ -1,7 +1,7 @@
 export type PageDoc = {
-  id: string;            // "a-propos/en-bref"
-  title: string;         // Admin label
-  slug: string;          // "/a-propos/en-bref"
+  id: string;            
+  title: string;         
+  slug: string;          
   sections: PageSection[];
   seo?: { title?: string; description?: string; image?: string };
 };
@@ -9,7 +9,8 @@ export type PageDoc = {
 export type PageSection =
   | HeroSection
   | RichTextSection
-  | SplitTextImageSection;
+  | SplitTextImageSection
+  | TeamSection;
 
 export type HeroSection = {
   type: "hero";
@@ -19,6 +20,7 @@ export type HeroSection = {
   subtitle?: string;
   backgroundImage?: string;  
   align?: "left" | "center";
+  textColor?: "light" | "dark";
 };
 
 export type RichTextSection = {
@@ -37,4 +39,20 @@ export type SplitTextImageSection = {
   imageUrl?: string;
   imageAlt?: string;
   imageSide?: "left" | "right";
+  variant?: "default" | "soft";
+};
+
+export type TeamSection = {
+  type: "team";
+  id: string;
+  enabled?: boolean;
+  title?: string;
+  variant?: "default" | "soft";
+  members: Array<{
+    name: string;
+    role?: string;     
+    bio?: string;
+    email?: string;
+    imageUrl?: string;
+  }>;
 };

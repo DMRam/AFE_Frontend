@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { AdminLayout, type AdminSectionId } from "../ui/AdminLayout";
 import { AdminPanel, AdminStat } from "../ui/AdminPanel";
 import { NavManager } from "../sections/NavManager";
+import { PagesManager } from "../sections/PagesManager";
 
 type ChangeItem = {
   id: string;
@@ -126,6 +127,26 @@ export default function AdminDashboard() {
           <NavManager />
         </AdminPanel>
       ) : null}
+
+      {/* PAGES */}
+      {active === "pages" ? (
+        <AdminPanel
+          title="Pages"
+          description="Edit the content pages (Firestore)."
+          right={
+            <button
+              type="button"
+              className="rounded-xl border bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+              onClick={() => setActive("overview")}
+            >
+              Back
+            </button>
+          }
+        >
+          <PagesManager />
+        </AdminPanel>
+      ) : null}
+
 
       {/* PLACEHOLDERS */}
       {active !== "overview" && active !== "navigation" ? (

@@ -190,7 +190,7 @@ export function SiteNav() {
                     }
                 }
             } else if (isExternal(href)) {
-                window.open(href, "_blank", "noopener,noreferrer");
+                window.open(href, "noopener,noreferrer");
             } else {
                 navigate(href)
             }
