@@ -4,6 +4,7 @@ export type PageDoc = {
   slug: string;          
   sections: PageSection[];
   seo?: { title?: string; description?: string; image?: string };
+  published?: boolean;
 };
 
 export type PageSection =

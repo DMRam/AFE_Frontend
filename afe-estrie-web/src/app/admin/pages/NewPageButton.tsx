@@ -336,28 +336,7 @@ export function NewPageButton({
                                     </label>
                                 </div>
 
-                                {/* Slug: optional override */}
-                                <div className="mt-4 grid gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-sm font-semibold text-gray-900">
-                                            Slug (Slug)
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            Auto: <span className="font-mono">{suggestedSlug || "—"}</span>
-                                        </div>
-                                    </div>
-
-                                    <input
-                                        className="w-full rounded-xl border px-3 py-2"
-                                        value={slugOverride}
-                                        onChange={(e) => setSlugOverride(e.target.value)}
-                                        placeholder="(optionnel) ex: /diagnostic (optional override)"
-                                    />
-
-                                    <div className="text-xs text-gray-500">
-                                        Laisse vide pour auto. Mets “/…” pour forcer (Leave empty to auto).
-                                    </div>
-                                </div>
+                               
 
                                 {/* Advanced */}
                                 <div className="mt-4">

@@ -8,3 +8,14 @@ export async function uploadImage(file: File, folder = "page-images") {
   await uploadBytes(r, file);
   return await getDownloadURL(r);
 }
+
+export async function uploadHomeMedia(file: File) {
+  const safeName = file.name.replace(/[^\w.-]+/g, "_");
+  const path = `sitePages/home/${Date.now()}_${safeName}`;
+  const storageRef = ref(storage, path);
+
+  const snap = await uploadBytes(storageRef, file, { contentType: file.type });
+  const url = await getDownloadURL(snap.ref);
+
+  return { url, path };
+}

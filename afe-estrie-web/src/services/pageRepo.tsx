@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { PageDoc } from "../content/types/pageBlocks";
+import { logAdminActivity } from "./audit";
 
 const PAGES_COL = "pages";
 
@@ -37,6 +38,17 @@ export async function upsertPage(page: PageDoc): Promise<void> {
   const docId = pageDocIdFromPageId(page.id);
   const ref = doc(db, PAGES_COL, docId);
 
+  await logAdminActivity({
+    type: "PAGE_SAVE",
+    title: "Page updated",
+    detail: page.title ?? page.id,
+    meta: {
+      pageId: page.id,
+      docId,
+    },
+  });
+
+
   // setDoc with merge lets you create or update
   await setDoc(
     ref,
@@ -57,6 +69,13 @@ export async function patchPage(docId: string, patch: Partial<PageDoc>): Promise
 }
 
 export async function removePage(docId: string): Promise<void> {
+
+  await logAdminActivity({
+    type: "PAGE_DELETE",
+    title: "Page deleted",
+    detail: docId,
+  });
+
   const ref = doc(db, PAGES_COL, docId);
   await deleteDoc(ref);
 }
