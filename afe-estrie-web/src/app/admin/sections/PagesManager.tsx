@@ -596,12 +596,12 @@ export const PagesManager = () => {
                                     {saving ? (
                                         <>
                                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                            Sauvegarde…
+                                            Publier...
                                         </>
                                     ) : (
                                         <>
                                             <Save className="h-4 w-4" />
-                                            Sauvegarder
+                                            Publier
                                         </>
                                     )}
                                 </button>
@@ -637,12 +637,13 @@ export const PagesManager = () => {
                                 </label>
 
                                 <label className="text-sm">
-                                    <div className="mb-2 font-medium text-gray-900">Slug (URL)</div>
+                                    <div className="mb-2 font-medium text-gray-900">Adresse publique (lien)</div>
                                     <input
                                         className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                        value={slug}
+                                        value={`http://192.168.2.133:5173/p${slug}`}
                                         onChange={(e) => setSlug(e.target.value)}
                                         placeholder="/a-propos/en-bref"
+                                        disabled
                                     />
                                 </label>
 

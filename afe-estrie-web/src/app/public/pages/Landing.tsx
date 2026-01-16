@@ -10,6 +10,9 @@ import { ResourcesPreview } from "../components/landing/ResourcesPreview";
 import type { HomePageCMS } from "../../../content/types/homePage";
 import { getHomePage, seedHomePage, saveHomePage } from "../../../services/homePageRepo";
 import { AutoDrawFeatures } from "../components/landing/AutoDrawFeatures";
+import { NewsPreview } from "../components/landing/NewsPreview";
+import { HomeContactMap } from "../components/landing/HomeContactCMS";
+import { FloatingSocial } from "../components/FloatingSocial";
 
 export default function Landing() {
   const [home, setHome] = useState<HomePageCMS | null>(null);
@@ -140,32 +143,19 @@ export default function Landing() {
         <PartnersStrip home={home} />
       )}
 
-      {/* {home.activities?.enabled && (
+      {home.activities?.enabled && (
         <ActivitiesPreview
-          heading={home.activities.header?.heading}
-          subheading={home.activities.header?.subheading}
-          ctaLabel={home.activities.ctaLabel}
-          ctaHref={home.activities.ctaHref}
+          home={home}
         />
-      )} */}
+      )}
 
-      {/* {home.events?.enabled && (
-        <EventsPreview
-          heading={home.events.header?.heading}
-          subheading={home.events.header?.subheading}
-          ctaLabel={home.events.ctaLabel}
-          ctaHref={home.events.ctaHref}
-        />
-      )} */}
+      <NewsPreview home={home} />
 
-      {/* {home.resources?.enabled && (
-        <ResourcesPreview
-          heading={home.resources.header?.heading}
-          subheading={home.resources.header?.subheading}
-          ctaLabel={home.resources.ctaLabel}
-          ctaHref={home.resources.ctaHref}
-        />
-      )} */}
+      <HomeContactMap home={home} />
+
+      <FloatingSocial />
+
+
     </>
   );
 }

@@ -198,27 +198,84 @@ export function seedHomePage(): HomePageCMS {
             items: [],
         } as any,
 
+        news: {
+            enabled: true,
+            eyebrow: "Nos actualités",
+            heading: "Nos actualités",
+            subheading: "Pour être informé des dernières actualités de l'association.",
+            ctaLabel: "Toutes nos actualités",
+            ctaHref: "/actualites",
+            items: [
+                {
+                    id: "n1",
+                    enabled: true,
+                    order: 1,
+                    title: "Lunettes PSIO : Une révolution...",
+                    excerpt: "La fibromyalgie est une affection chronique qui touche des millions de personnes...",
+                    date: "28 OCTOBRE 2025",
+                    href: "/actualites/lunettes-psio",
+                    coverSrc: "https://images.unsplash.com/...", // replace later
+                    coverAlt: "Couverture",
+                },
+                {
+                    id: "n2",
+                    enabled: true,
+                    order: 2,
+                    title: "Fibromyalgie et comportement...",
+                    excerpt: "La fibromyalgie est un syndrome douloureux chronique étroitement associé...",
+                    date: "20 OCTOBRE 2025",
+                    href: "/actualites/fibromyalgie-comportement",
+                    coverSrc: "https://images.unsplash.com/...",
+                    coverAlt: "Couverture",
+                },
+            ],
+        },
+
+        contact: {
+            enabled: true,
+
+            orgName: "Association de la fibromyalgie de l’Estrie",
+            email: "info@fibromyalgie.ca",
+            address: "1013, rue Galt Ouest Sherbrooke (Qc) J1H 1Z9",
+
+            // Put the real directions link here (Google Maps share link)
+            directionsUrl: "",
+
+            hours: [
+                { label: "Lundi au vendredi", value: "9h00 à 12h00" },
+                { label: "Lundi au vendredi", value: "13h00 à 16h00" },
+            ],
+
+            phones: [
+                { label: "Local", value: "819-566-1067" },
+                { label: "Sans frais", value: "1-877-566-1067" },
+                { label: "", value: "819-566-0111" },
+            ],
+        },
+
+
+
     };
 }
 
 
 export function deepMergeDefaults<T>(defaults: T, existing: any): T {
-  // existing wins; defaults fill the gaps
-  if (Array.isArray(defaults)) {
-    // arrays: keep existing as-is if present, otherwise default
-    return (Array.isArray(existing) ? existing : defaults) as any;
-  }
-
-  if (defaults && typeof defaults === "object") {
-    const out: any = { ...(defaults as any) };
-    const ex = existing && typeof existing === "object" ? existing : {};
-    for (const k of Object.keys(ex)) {
-      const dv = (defaults as any)[k];
-      const ev = ex[k];
-      out[k] = dv === undefined ? ev : deepMergeDefaults(dv, ev);
+    // existing wins; defaults fill the gaps
+    if (Array.isArray(defaults)) {
+        // arrays: keep existing as-is if present, otherwise default
+        return (Array.isArray(existing) ? existing : defaults) as any;
     }
-    return out;
-  }
 
-  return (existing ?? defaults) as any;
+    if (defaults && typeof defaults === "object") {
+        const out: any = { ...(defaults as any) };
+        const ex = existing && typeof existing === "object" ? existing : {};
+        for (const k of Object.keys(ex)) {
+            const dv = (defaults as any)[k];
+            const ev = ex[k];
+            out[k] = dv === undefined ? ev : deepMergeDefaults(dv, ev);
+        }
+        return out;
+    }
+
+    return (existing ?? defaults) as any;
 }

@@ -30,8 +30,15 @@ function ensureLeadingSlash(s: string) {
 }
 
 function normalizePageId(input: string) {
-    // allow user to type "/a-propos/diagnostic" or "a-propos/diagnostic"
-    return input.trim().replace(/^\/+/, "").replace(/\/+$/g, "");
+    // Remove leading/trailing slashes and the /p/ prefix if user typed it
+    let cleaned = input.trim().replace(/^\/+|\/+$/g, "");
+
+    // Remove /p/ prefix if user included it
+    if (cleaned.startsWith("p/")) {
+        cleaned = cleaned.substring(2);
+    }
+
+    return cleaned;
 }
 
 function lastSegment(pageId: string) {
@@ -69,8 +76,8 @@ function buildPageDoc(params: {
                 id: uid("hero"),
                 enabled: true,
                 title: params.title,
-                subtitle: "Sous-titre (Subtitle)",
-                backgroundImage: "/images/your-image.jpg",
+                subtitle: "Add your subtitle here...",
+                backgroundImage: "/images/placeholder.jpg",
                 align: "center",
                 textColor: "light",
             },
@@ -78,15 +85,15 @@ function buildPageDoc(params: {
                 type: "richText",
                 id: uid("rt"),
                 enabled: true,
-                content: "Écris ton contenu ici… (Write your content here…)",
+                content: "Write your content here...",
             },
             {
                 type: "split",
                 id: uid("split"),
                 enabled: true,
-                title: "Titre de section (Section title)",
-                content: "Écris ton texte ici… (Write your text here…)",
-                imageUrl: "/images/your-image.jpg",
+                title: "Section Title",
+                content: "Add your text here...",
+                imageUrl: "/images/placeholder.jpg",
                 imageAlt: "",
                 imageSide: "right",
                 variant: "default",
@@ -125,9 +132,7 @@ export function NewPageButton({
         return pageId ? pageDocIdFromPageId(pageId) : "";
     }, [pageId]);
 
-    // Auto slug proposal:
-    // - If user overrides, use it
-    // - Else, derive from last segment of pageId; fallback to title
+    // Auto slug proposal
     const suggestedSlug = useMemo(() => {
         const base = lastSegment(pageId) || title;
         const s = slugify(base);
@@ -139,13 +144,14 @@ export function NewPageButton({
     }, [slugOverride, suggestedSlug]);
 
     const urlPreview = useMemo(() => {
-        // purely informational; assumes site base at "/"
-        return finalSlug || "—";
-    }, [finalSlug]);
+        // Always include /p/ prefix in the URL preview
+        if (!pageId) return "—";
+        return `/p/${pageId}`;
+    }, [pageId]);
 
     const canSubmit = useMemo(() => {
-        return !!pageId && !!title.trim() && !!finalSlug && !submitting;
-    }, [pageId, title, finalSlug, submitting]);
+        return !!pageId && !!title.trim() && !submitting;
+    }, [pageId, title, submitting]);
 
     function resetForm() {
         setErr("");
@@ -167,16 +173,15 @@ export function NewPageButton({
     async function submit() {
         setErr("");
 
-        if (!pageId) return setErr("ID de page requis (Page ID required).");
-        if (!title.trim()) return setErr("Titre requis (Title required).");
-        if (!finalSlug) return setErr("Slug requis (Slug required).");
+        if (!pageId) return setErr("Page ID is required.");
+        if (!title.trim()) return setErr("Title is required.");
 
         setSubmitting(true);
         try {
             const doc = buildPageDoc({
                 pageId,
                 title: title.trim(),
-                slug: finalSlug,
+                slug: finalSlug || `/p/${pageId}`, // Use the /p/ prefix for slug
                 seed,
                 seoTitle: seoTitle.trim(),
                 seoDescription: seoDescription.trim(),
@@ -189,7 +194,7 @@ export function NewPageButton({
 
             close();
         } catch (e: any) {
-            setErr(e?.message ?? "Échec de création (Failed to create page).");
+            setErr(e?.message ?? "Failed to create page.");
             setSubmitting(false);
         }
     }
@@ -200,211 +205,269 @@ export function NewPageButton({
                 type="button"
                 onClick={() => setOpen(true)}
                 className={[
-                    "rounded-xl border bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50",
+                    "inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black transition-colors",
                     className,
                 ].join(" ")}
             >
-                + Nouvelle page (New page)
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                New Page
             </button>
 
             {open ? (
                 <div
-                    className="fixed inset-0 z-[120] flex items-center justify-center p-4"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     role="dialog"
                     aria-modal="true"
-                    aria-label="Créer une page (Create page)"
                 >
-                    <button
-                        type="button"
-                        className="absolute inset-0 bg-black/30"
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
                         onClick={close}
-                        aria-label="Fermer (Close)"
+                        aria-hidden="true"
                     />
 
-                    <div className="relative w-full max-w-2xl rounded-2xl border bg-white shadow-xl">
-                        <div className="flex items-center justify-between border-b px-5 py-4">
-                            <div>
-                                <div className="text-sm font-semibold text-gray-900">
-                                    Créer une page (Create page)
+                    {/* Modal */}
+                    <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        {/* Header */}
+                        <div className="border-b border-gray-100 p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-semibold text-gray-900">Create New Page</h2>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Set up your page URL, title, and content
+                                    </p>
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                    2 champs requis: ID + Titre (2 required: ID + Title)
-                                </div>
+                                <button
+                                    onClick={close}
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    aria-label="Close"
+                                >
+                                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
-
-                            <button
-                                type="button"
-                                className="rounded-xl border bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                                onClick={close}
-                            >
-                                Fermer (Close)
-                            </button>
                         </div>
 
-                        <div className="px-5 py-4 space-y-4">
-                            {err ? (
-                                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                                    {err}
-                                </div>
-                            ) : null}
-
-                            {/* SECTION: Page key */}
-                            <div className="rounded-2xl border bg-gray-50 p-4">
-                                <div className="text-sm font-semibold text-gray-900">
-                                    1) Identifiant & emplacement (ID & location)
-                                </div>
-
-                                <div className="mt-3 grid gap-4 md:grid-cols-2">
-                                    <label className="text-sm">
-                                        <div className="mb-1 font-semibold text-gray-900">
-                                            ID de page (Page ID)
+                        {/* Scrollable content */}
+                        <div className="max-h-[70vh] overflow-y-auto p-6 space-y-6">
+                            {/* Error message */}
+                            {err && (
+                                <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0">
+                                            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
                                         </div>
-                                        <input
-                                            className="w-full rounded-xl border bg-white px-3 py-2"
-                                            value={pageIdRaw}
-                                            onChange={(e) => setPageIdRaw(e.target.value)}
-                                            placeholder='ex: "a-propos/diagnostic"'
-                                            autoFocus
-                                        />
-                                        <div className="mt-1 text-xs text-gray-600">
-                                            Utilise des <b>/</b> pour organiser (Use <b>/</b> to organize).
+                                        <div className="text-sm text-red-700">{err}</div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* URL Section */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+                                    URL Structure
+                                </h3>
+
+                                <div className="space-y-3">
+                                    <label className="block">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <span className="text-sm font-medium text-gray-700">Page Path</span>
+                                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                                Will be prefixed with <code className="font-mono">/p/</code>
+                                            </span>
+                                        </div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span className="text-gray-500 font-mono">/p/</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                className="w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                value={pageIdRaw}
+                                                onChange={(e) => setPageIdRaw(e.target.value)}
+                                                placeholder="about/diagnostic"
+                                                autoFocus
+                                            />
                                         </div>
                                     </label>
 
-                                    <div className="text-sm">
-                                        <div className="mb-1 font-semibold text-gray-900">
-                                            Aperçu (Preview)
-                                        </div>
+                                    <div className="text-xs text-gray-500">
+                                        <p className="flex items-center gap-1.5">
+                                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Use slashes to organize pages into folders. Example: <code className="font-mono mx-1 px-1.5 py-0.5 bg-gray-100 rounded">services/consulting</code>
+                                        </p>
+                                    </div>
+                                </div>
 
-                                        <div className="rounded-xl border bg-white px-3 py-2 text-sm">
-                                            <div className="text-xs text-gray-500">URL</div>
-                                            <div className="font-mono text-gray-900">{urlPreview}</div>
+                                {/* URL Preview Card */}
+                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Preview</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <div className="text-xs text-gray-500 mb-1">Public URL</div>
+                                            <div className="font-mono text-sm text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 truncate">
+                                                {urlPreview}
+                                            </div>
                                         </div>
-
-                                        <div className="mt-2 rounded-xl border bg-white px-3 py-2 text-sm">
-                                            <div className="text-xs text-gray-500">Firestore docId</div>
-                                            <div className="font-mono text-gray-900">
-                                                {derivedDocId || "—"}
+                                        <div>
+                                            <div className="text-xs text-gray-500 mb-1">Internal ID</div>
+                                            <div className="font-mono text-sm text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 truncate">
+                                                {derivedDocId || "Will be generated"}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* SECTION: Content */}
-                            <div className="rounded-2xl border p-4">
-                                <div className="text-sm font-semibold text-gray-900">
-                                    2) Contenu de base (Basic content)
+                            {/* Content Section */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+                                    Content
+                                </h3>
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <label className="block">
+                                            <span className="text-sm font-medium text-gray-700">Page Title</span>
+                                            <input
+                                                type="text"
+                                                className="w-full mt-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                value={title}
+                                                onChange={(e) => {
+                                                    setTitle(e.target.value);
+                                                    if (!seoTitle.trim()) setSeoTitle(e.target.value);
+                                                }}
+                                                placeholder="About Our Diagnostic Services"
+                                            />
+                                        </label>
+                                        <p className="text-xs text-gray-500">
+                                            This will be displayed in the page header and navigation
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="block">
+                                            <span className="text-sm font-medium text-gray-700">Template</span>
+                                            <select
+                                                className="w-full mt-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none"
+                                                value={seed}
+                                                onChange={(e) => setSeed(e.target.value as SeedMode)}
+                                            >
+                                                <option value="standard">Standard Layout (Recommended)</option>
+                                                <option value="empty">Blank Page</option>
+                                            </select>
+                                        </label>
+                                        <p className="text-xs text-gray-500">
+                                            Choose a starting template. You can customize everything later.
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <div className="mt-3 grid gap-4 md:grid-cols-2">
-                                    <label className="text-sm">
-                                        <div className="mb-1 font-semibold text-gray-900">
-                                            Titre (Title)
-                                        </div>
-                                        <input
-                                            className="w-full rounded-xl border px-3 py-2"
-                                            value={title}
-                                            onChange={(e) => {
-                                                setTitle(e.target.value);
-                                                if (!seoTitle.trim()) setSeoTitle(e.target.value);
-                                            }}
-                                            placeholder="ex: Diagnostic"
-                                        />
-                                        <div className="mt-1 text-xs text-gray-500">
-                                            S’affiche dans la liste et dans la page (Shown in list + page).
-                                        </div>
-                                    </label>
-
-                                    <label className="text-sm">
-                                        <div className="mb-1 font-semibold text-gray-900">
-                                            Modèle (Template)
-                                        </div>
-                                        <select
-                                            className="w-full rounded-xl border px-3 py-2"
-                                            value={seed}
-                                            onChange={(e) => setSeed(e.target.value as SeedMode)}
-                                        >
-                                            <option value="standard">
-                                                Standard — 3 sections (Hero + Texte + Split)
-                                            </option>
-                                            <option value="empty">Vide — aucune section (Empty)</option>
-                                        </select>
-                                        <div className="mt-1 text-xs text-gray-500">
-                                            Tu peux modifier après (You can edit after).
-                                        </div>
-                                    </label>
-                                </div>
-
-                               
-
-                                {/* Advanced */}
-                                <div className="mt-4">
+                                {/* Advanced Options */}
+                                <div className="pt-4 border-t border-gray-200">
                                     <button
                                         type="button"
-                                        className="text-sm font-semibold text-gray-900 hover:underline"
                                         onClick={() => setShowAdvanced((v) => !v)}
+                                        className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                                     >
-                                        {showAdvanced
-                                            ? "Masquer options avancées (Hide advanced)"
-                                            : "Options avancées (Advanced)"}
+                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${showAdvanced ? 'bg-gray-900 border-gray-900' : 'border-gray-300'}`}>
+                                            <svg
+                                                className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180 text-white' : 'text-gray-500'}`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                        <span>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</span>
                                     </button>
 
-                                    {showAdvanced ? (
-                                        <div className="mt-3 grid gap-4 md:grid-cols-2">
-                                            <label className="text-sm">
-                                                <div className="mb-1 font-semibold text-gray-900">
-                                                    Titre SEO (SEO title)
+                                    {showAdvanced && (
+                                        <div className="mt-4 space-y-4 animate-in fade-in duration-200">
+                                            <div className="grid gap-4 md:grid-cols-2">
+                                                <div>
+                                                    <label className="block">
+                                                        <span className="text-sm font-medium text-gray-700">SEO Title</span>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                            value={seoTitle}
+                                                            onChange={(e) => setSeoTitle(e.target.value)}
+                                                            placeholder="Optional - for search engines"
+                                                        />
+                                                    </label>
                                                 </div>
-                                                <input
-                                                    className="w-full rounded-xl border px-3 py-2"
-                                                    value={seoTitle}
-                                                    onChange={(e) => setSeoTitle(e.target.value)}
-                                                    placeholder="(optionnel) (optional)"
-                                                />
-                                            </label>
-
-                                            <label className="text-sm">
-                                                <div className="mb-1 font-semibold text-gray-900">
-                                                    Description SEO (SEO description)
+                                                <div>
+                                                    <label className="block">
+                                                        <span className="text-sm font-medium text-gray-700">SEO Description</span>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                            value={seoDescription}
+                                                            onChange={(e) => setSeoDescription(e.target.value)}
+                                                            placeholder="Optional - for search engines"
+                                                        />
+                                                    </label>
                                                 </div>
-                                                <input
-                                                    className="w-full rounded-xl border px-3 py-2"
-                                                    value={seoDescription}
-                                                    onChange={(e) => setSeoDescription(e.target.value)}
-                                                    placeholder="(optionnel) (optional)"
-                                                />
-                                            </label>
+                                            </div>
                                         </div>
-                                    ) : null}
+                                    )}
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center justify-end gap-2 pt-1">
-                                <button
-                                    type="button"
-                                    className="rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                                    onClick={close}
-                                    disabled={submitting}
-                                >
-                                    Annuler (Cancel)
-                                </button>
-                                <button
-                                    type="button"
-                                    className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-60"
-                                    onClick={submit}
-                                    disabled={!canSubmit}
-                                    title={!canSubmit ? "Remplis ID + Titre (Fill ID + Title)" : ""}
-                                >
-                                    {submitting ? "Création… (Creating…)" : "Créer (Create)"}
-                                </button>
-                            </div>
-
-                            <div className="text-xs text-gray-500">
-                                Exemple (Example):{" "}
-                                <span className="font-mono">a-propos/diagnostic</span> → docId{" "}
-                                <span className="font-mono">a-propos__diagnostic</span>
+                        {/* Footer */}
+                        <div className="border-t border-gray-100 p-6 bg-gray-50/50">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-gray-600">
+                                    <p className="font-medium mb-1">Example</p>
+                                    <p className="font-mono text-xs">
+                                        about/diagnostic → <span className="text-blue-600">/p/about/diagnostic</span>
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={close}
+                                        className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+                                        disabled={submitting}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={submit}
+                                        disabled={!canSubmit}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {submitting ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Creating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                Create Page
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

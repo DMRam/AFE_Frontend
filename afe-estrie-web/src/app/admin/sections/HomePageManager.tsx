@@ -45,6 +45,75 @@ const normLogos = (logos: any[] | undefined) =>
         storagePath: l.storagePath ?? "",
     }));
 
+const normNewsItems = (items: any[] | undefined) =>
+    (items ?? []).map((it, idx) => ({
+        ...it,
+        id: it.id || `n${idx + 1}`,
+        enabled: it.enabled !== false,
+        order: clampNumber(it.order ?? idx + 1, 0, 999, idx + 1),
+        title: it.title ?? "",
+        excerpt: it.excerpt ?? "",
+        href: it.href ?? "",
+        date: it.date ?? "",
+        readingTime: it.readingTime ?? "",
+        coverSrc: it.coverSrc ?? "",
+        coverAlt: it.coverAlt ?? "",
+        pageDocId: it.pageDocId ?? "",
+    }));
+
+function setHomeContactPatch(setDraft: any, patch: any) {
+    setDraft((d: any) => ({
+        ...(d ?? {}),
+        contact: {
+            ...(d?.contact ?? {}),
+            ...patch,
+        },
+    }));
+}
+
+function updateContactListItem(
+    setDraft: any,
+    key: "hours" | "phones",
+    idx: number,
+    patch: any
+) {
+    setDraft((d: any) => {
+        const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
+        const cur = list[idx] ?? {};
+        list[idx] = { ...cur, ...patch };
+        return {
+            ...(d ?? {}),
+            contact: {
+                ...(d?.contact ?? {}),
+                [key]: list,
+            },
+        };
+    });
+}
+
+function addContactListItem(setDraft: any, key: "hours" | "phones") {
+    setDraft((d: any) => {
+        const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
+        list.push(key === "hours" ? { label: "", value: "" } : { label: "", value: "" });
+        return {
+            ...(d ?? {}),
+            contact: { ...(d?.contact ?? {}), [key]: list },
+        };
+    });
+}
+
+function removeContactListItem(setDraft: any, key: "hours" | "phones", idx: number) {
+    setDraft((d: any) => {
+        const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
+        list.splice(idx, 1);
+        return {
+            ...(d ?? {}),
+            contact: { ...(d?.contact ?? {}), [key]: list },
+        };
+    });
+}
+
+
 
 export default function HomePageManager() {
     const [home, setHome] = useState<HomePageCMS | null>(null);
@@ -117,6 +186,7 @@ export default function HomePageManager() {
         return JSON.stringify(home) !== JSON.stringify(draft);
     }, [home, draft]);
 
+
     const normFeaturesItems = (items: any[] | undefined) =>
         (items ?? []).map((it, idx) => ({
             ...it,
@@ -129,12 +199,32 @@ export default function HomePageManager() {
         }));
 
 
+    const normContact = (c: any | undefined) => ({
+        enabled: c?.enabled !== false,
+        mapEmbedUrl: c?.mapEmbedUrl ?? "",
+        orgName: c?.orgName ?? "",
+        email: c?.email ?? "",
+        address: c?.address ?? "",
+        directionsUrl: c?.directionsUrl ?? "",
+        hours: (c?.hours ?? []).map((h: any, idx: number) => ({
+            label: h?.label ?? "",
+            value: h?.value ?? "",
+            id: h?.id || `h${idx + 1}`, // optional
+        })),
+        phones: (c?.phones ?? []).map((p: any, idx: number) => ({
+            label: p?.label ?? "",
+            value: p?.value ?? "",
+            id: p?.id || `ph${idx + 1}`, // optional
+        })),
+    });
+
+
     const publish = async () => {
         if (!draft) return;
         try {
             setSaving(true);
 
-            // basic sanitization so Firestore stays clean
+
             const normalized: HomePageCMS = {
                 ...draft,
                 hero: {
@@ -219,6 +309,17 @@ export default function HomePageManager() {
                     heading: draft.partners?.heading ?? "",
                     logos: normLogos((draft.partners as any)?.logos),
                 } as any,
+
+                news: {
+                    enabled: (draft as any).news?.enabled !== false,
+                    eyebrow: (draft as any).news?.eyebrow ?? "",
+                    heading: (draft as any).news?.heading ?? "",
+                    subheading: (draft as any).news?.subheading ?? "",
+                    ctaLabel: (draft as any).news?.ctaLabel ?? "",
+                    ctaHref: (draft as any).news?.ctaHref ?? "",
+                    items: normNewsItems((draft as any).news?.items),
+                } as any,
+                contact: normContact((draft as any)?.contact),
 
 
             };
@@ -571,6 +672,16 @@ export default function HomePageManager() {
                                 block={draft.partners}
                                 onChange={(next: any) => setDraft({ ...draft, partners: next })}
                             />
+                            <NewsEditor
+                                block={(draft as any).news}
+                                onChange={(next: any) => setDraft({ ...(draft as any), news: next })}
+                            />
+
+                            <ContactEditor
+                                block={(draft as any).contact}
+                                onChange={(next: any) => setDraft({ ...(draft as any), contact: next })}
+                            />
+
                         </div>
                     )}
                 </SectionCard>
@@ -1648,6 +1759,576 @@ function FeaturesEditor({ block, onChange }: any) {
                             </p>
                         </div>
                     ))}
+            </div>
+        </div>
+    );
+}
+
+type NewsItem = {
+    id: string;
+    enabled?: boolean;
+    order?: number;
+    title?: string;
+    excerpt?: string;
+    date?: string;
+    href?: string;
+    coverSrc?: string;
+    coverAlt?: string;
+    storagePath?: string; // optional, if using upload
+    readingTime?: string;
+    pageDocId?: string;
+};
+
+type NewsBlock = {
+    enabled?: boolean;
+    eyebrow?: string;
+    heading?: string;
+    subheading?: string;
+    ctaLabel?: string;
+    ctaHref?: string;
+    items?: NewsItem[];
+};
+
+export function NewsEditor({
+    block,
+    onChange,
+}: {
+    block?: NewsBlock;
+    onChange: (next: NewsBlock) => void;
+}) {
+    const items = (block?.items ?? []) as NewsItem[];
+
+    const [uploadingId, setUploadingId] = useState<string | null>(null);
+    const [err, setErr] = useState<string | null>(null);
+
+    const setItem = (id: string, patch: Partial<NewsItem>) => {
+        const next = items.map((x) => (x.id === id ? { ...x, ...patch } : x));
+        onChange({ ...(block ?? {}), items: next });
+    };
+
+    const removeItem = (id: string) => {
+        onChange({ ...(block ?? {}), items: items.filter((x) => x.id !== id) });
+    };
+
+    const addItem = () => {
+        const next = [...items];
+        next.push({
+            id: uid("n"),
+            enabled: true,
+            order: next.length + 1,
+            title: "",
+            excerpt: "",
+            date: "",
+            href: "",
+            coverSrc: "",
+            coverAlt: "",
+            storagePath: "",
+        });
+        onChange({ ...(block ?? {}), items: next });
+    };
+
+    // OPTIONAL upload handler (same pattern as PartnersEditor)
+    const onUpload = async (id: string, file?: File | null) => {
+        if (!file) return;
+        setErr(null);
+        setUploadingId(id);
+        try {
+            const { url, path } = await uploadHomeMedia(file);
+            setItem(id, { coverSrc: url, storagePath: path });
+        } catch (e: any) {
+            console.error(e);
+            setErr(e?.message ?? "Upload error");
+        } finally {
+            setUploadingId(null);
+        }
+    };
+
+    return (
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="border-l-4 border-red-500">
+                <div className="p-5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">📰</span>
+                            <h4 className="font-semibold text-gray-900">Actualités</h4>
+                        </div>
+
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={block?.enabled !== false}
+                                onChange={(e) => onChange({ ...(block ?? {}), enabled: e.target.checked })}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Section active</span>
+                        </label>
+                    </div>
+
+                    {/* Header fields */}
+                    <div className="mt-6 grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Eyebrow</label>
+                            <input
+                                type="text"
+                                value={block?.eyebrow ?? ""}
+                                onChange={(e) => onChange({ ...(block ?? {}), eyebrow: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="Ex: Nos actualités"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Titre</label>
+                            <input
+                                type="text"
+                                value={block?.heading ?? ""}
+                                onChange={(e) => onChange({ ...(block ?? {}), heading: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="Ex: Nos actualités"
+                            />
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Sous-titre</label>
+                            <textarea
+                                value={block?.subheading ?? ""}
+                                onChange={(e) => onChange({ ...(block ?? {}), subheading: e.target.value })}
+                                rows={2}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="Ex: Pour être informé des dernières actualités..."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Texte du bouton</label>
+                            <input
+                                type="text"
+                                value={block?.ctaLabel ?? ""}
+                                onChange={(e) => onChange({ ...(block ?? {}), ctaLabel: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="Ex: Toutes nos actualités"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Lien du bouton</label>
+                            <input
+                                type="text"
+                                value={block?.ctaHref ?? ""}
+                                onChange={(e) => onChange({ ...(block ?? {}), ctaHref: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="Ex: /actualites"
+                            />
+                        </div>
+                    </div>
+
+                    {err ? (
+                        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {err}
+                        </div>
+                    ) : null}
+
+                    {/* Items */}
+                    <div className="mt-8 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-semibold text-gray-900">Cartes ({items.length})</h5>
+                            <button
+                                type="button"
+                                onClick={addItem}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                            >
+                                + Ajouter une actualité
+                            </button>
+                        </div>
+
+                        {items
+                            .slice()
+                            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                            .map((it, idx) => {
+                                const isUploading = uploadingId === it.id;
+                                const cover = it.coverSrc ?? "";
+
+                                return (
+                                    <div key={it.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex min-w-0 items-start gap-4">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-sm font-semibold text-red-700">
+                                                    {idx + 1}
+                                                </div>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        <label className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={it.enabled !== false}
+                                                                onChange={(e) => setItem(it.id, { enabled: e.target.checked })}
+                                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                            />
+                                                            <span className="text-sm font-medium text-gray-700">Actif</span>
+                                                        </label>
+
+                                                        <div className="text-xs text-gray-500">ID: {it.id}</div>
+                                                    </div>
+
+                                                    {/* Preview */}
+                                                    <div className="mt-3 flex items-center gap-3">
+                                                        <div className="flex h-16 w-28 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                                            {cover ? (
+                                                                <img src={cover} alt={it.coverAlt || "cover"} className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-xs font-semibold text-gray-400">Image</span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="grid flex-1 gap-3 md:grid-cols-3">
+                                                            <div>
+                                                                <label className="mb-1 block text-xs font-medium text-gray-700">Ordre</label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={it.order ?? idx + 1}
+                                                                    onChange={(e) => setItem(it.id, { order: Number(e.target.value) })}
+                                                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="mb-1 block text-xs font-medium text-gray-700">Date (label)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={it.date ?? ""}
+                                                                    onChange={(e) => setItem(it.id, { date: e.target.value })}
+                                                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                    placeholder="Ex: 28 OCTOBRE 2025"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="mb-1 block text-xs font-medium text-gray-700">Temps lecture</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={it.readingTime ?? ""}
+                                                                    onChange={(e) => setItem(it.id, { readingTime: e.target.value })}
+                                                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                    placeholder="Ex: 3 min"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                                        <div className="md:col-span-2">
+                                                            <label className="mb-1 block text-xs font-medium text-gray-700">Titre</label>
+                                                            <input
+                                                                type="text"
+                                                                value={it.title ?? ""}
+                                                                onChange={(e) => setItem(it.id, { title: e.target.value })}
+                                                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                placeholder="Titre de l’actualité"
+                                                            />
+                                                        </div>
+
+                                                        <div className="md:col-span-2">
+                                                            <label className="mb-1 block text-xs font-medium text-gray-700">Extrait</label>
+                                                            <textarea
+                                                                value={it.excerpt ?? ""}
+                                                                onChange={(e) => setItem(it.id, { excerpt: e.target.value })}
+                                                                rows={3}
+                                                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                placeholder="Texte court affiché sur la carte..."
+                                                            />
+                                                        </div>
+
+                                                        <div className="md:col-span-2">
+                                                            <label className="mb-1 block text-xs font-medium text-gray-700">Lien (href)</label>
+                                                            <input
+                                                                type="text"
+                                                                value={it.href ?? ""}
+                                                                onChange={(e) => setItem(it.id, { href: e.target.value })}
+                                                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                placeholder="/actualites/slug-ou-page"
+                                                            />
+                                                            <p className="mt-1 text-[11px] text-gray-500">
+                                                                Option: tu peux pointer vers une page créée par ton PagesManager.
+                                                            </p>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="mb-1 block text-xs font-medium text-gray-700">Image URL (option A)</label>
+                                                            <input
+                                                                type="text"
+                                                                value={it.coverSrc ?? ""}
+                                                                onChange={(e) => setItem(it.id, { coverSrc: e.target.value, storagePath: "" })}
+                                                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                placeholder="https://.../cover.jpg"
+                                                            />
+                                                            <p className="mt-1 text-[11px] text-gray-500">
+                                                                Si tu colles une URL, on vide storagePath.
+                                                            </p>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="mb-1 block text-xs font-medium text-gray-700">Upload (option B)</label>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => onUpload(it.id, e.target.files?.[0])}
+                                                                disabled={isUploading}
+                                                                className="block w-full text-sm"
+                                                            />
+                                                            <div className="mt-2 text-[11px] text-gray-500">
+                                                                {isUploading ? "Upload en cours..." : it.storagePath ? `Storage: ${it.storagePath}` : ""}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="md:col-span-2">
+                                                            <label className="mb-1 block text-xs font-medium text-gray-700">Alt image</label>
+                                                            <input
+                                                                type="text"
+                                                                value={it.coverAlt ?? ""}
+                                                                onChange={(e) => setItem(it.id, { coverAlt: e.target.value })}
+                                                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                                                placeholder="Ex: Photo de couverture"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => removeItem(it.id)}
+                                                className="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                                            >
+                                                Supprimer
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                        {!items.length ? (
+                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                                Aucune actualité pour le moment. Cliquez sur <b>“Ajouter une actualité”</b>.
+                            </div>
+                        ) : null}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+type ContactBlock = {
+    enabled?: boolean;
+    mapEmbedUrl?: string;
+    orgName?: string;
+    email?: string;
+    address?: string;
+    directionsUrl?: string;
+    hours?: { label: string; value: string }[];
+    phones?: { label?: string; value: string }[];
+};
+
+export function ContactEditor({
+    block,
+    onChange,
+}: {
+    block?: ContactBlock;
+    onChange: (next: ContactBlock) => void;
+}) {
+    const hours = (block?.hours ?? []) as { label: string; value: string }[];
+    const phones = (block?.phones ?? []) as { label?: string; value: string }[];
+
+    const set = (patch: Partial<ContactBlock>) => onChange({ ...(block ?? {}), ...patch });
+
+    const setHour = (idx: number, patch: Partial<{ label: string; value: string }>) => {
+        const next = [...hours];
+        next[idx] = { ...(next[idx] ?? { label: "", value: "" }), ...patch };
+        set({ hours: next });
+    };
+
+    const addHour = () => set({ hours: [...hours, { label: "", value: "" }] });
+    const removeHour = (idx: number) => set({ hours: hours.filter((_, i) => i !== idx) });
+
+    const setPhone = (idx: number, patch: Partial<{ label?: string; value: string }>) => {
+        const next = [...phones];
+        next[idx] = { ...(next[idx] ?? { label: "", value: "" }), ...patch };
+        set({ phones: next });
+    };
+
+    const addPhone = () => set({ phones: [...phones, { label: "", value: "" }] });
+    const removePhone = (idx: number) => set({ phones: phones.filter((_, i) => i !== idx) });
+
+    return (
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="border-l-4 border-rose-500">
+                <div className="p-5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">📍</span>
+                            <h4 className="font-semibold text-gray-900">Contact (carte + coordonnées)</h4>
+                        </div>
+
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={block?.enabled !== false}
+                                onChange={(e) => set({ enabled: e.target.checked })}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Section active</span>
+                        </label>
+                    </div>
+
+                    <div className="mt-6 grid gap-4 md:grid-cols-2">
+                        <label className="text-sm">
+                            <div className="mb-1 font-medium text-gray-900">Nom de l’organisme</div>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                value={block?.orgName ?? ""}
+                                onChange={(e) => set({ orgName: e.target.value })}
+                                placeholder="Association de la fibromyalgie de l’Estrie"
+                            />
+                        </label>
+
+                        <label className="text-sm">
+                            <div className="mb-1 font-medium text-gray-900">Courriel</div>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                value={block?.email ?? ""}
+                                onChange={(e) => set({ email: e.target.value })}
+                                placeholder="info@exemple.ca"
+                            />
+                        </label>
+
+                        <label className="text-sm md:col-span-2">
+                            <div className="mb-1 font-medium text-gray-900">Adresse</div>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                value={block?.address ?? ""}
+                                onChange={(e) => set({ address: e.target.value })}
+                                placeholder="1013, rue ... Sherbrooke (Qc) ..."
+                            />
+                        </label>
+
+                        <label className="text-sm md:col-span-2">
+                            <div className="mb-1 font-medium text-gray-900">Carte (lien embed Google Maps)</div>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs"
+                                value={block?.mapEmbedUrl ?? ""}
+                                onChange={(e) => set({ mapEmbedUrl: e.target.value })}
+                                placeholder="https://www.google.com/maps/embed?pb=..."
+                            />
+                            <div className="mt-1 text-xs text-gray-500">
+                                Google Maps → Partager → <b>Intégrer une carte</b> → copier le lien (<span className="font-mono">src</span>)
+                            </div>
+                        </label>
+
+                        <label className="text-sm md:col-span-2">
+                            <div className="mb-1 font-medium text-gray-900">Lien “Itinéraire” (Directions)</div>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                value={block?.directionsUrl ?? ""}
+                                onChange={(e) => set({ directionsUrl: e.target.value })}
+                                placeholder="https://maps.google.com/?q=..."
+                            />
+                        </label>
+                    </div>
+
+                    {/* HOURS */}
+                    <div className="mt-8">
+                        <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-semibold text-gray-900">Heures d’ouverture</h5>
+                            <button
+                                type="button"
+                                onClick={addHour}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                            >
+                                + Ajouter
+                            </button>
+                        </div>
+
+                        <div className="mt-3 space-y-2">
+                            {hours.map((h, idx) => (
+                                <div key={idx} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                                    <input
+                                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                        value={h.label ?? ""}
+                                        onChange={(e) => setHour(idx, { label: e.target.value })}
+                                        placeholder="Lundi au vendredi"
+                                    />
+                                    <input
+                                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                        value={h.value ?? ""}
+                                        onChange={(e) => setHour(idx, { value: e.target.value })}
+                                        placeholder="9h00 à 12h00"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeHour(idx)}
+                                        className="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                                    >
+                                        Supprimer
+                                    </button>
+                                </div>
+                            ))}
+
+                            {!hours.length ? (
+                                <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                                    Aucune heure. Cliquez sur <b>“Ajouter”</b>.
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {/* PHONES */}
+                    <div className="mt-8">
+                        <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-semibold text-gray-900">Téléphones</h5>
+                            <button
+                                type="button"
+                                onClick={addPhone}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                            >
+                                + Ajouter
+                            </button>
+                        </div>
+
+                        <div className="mt-3 space-y-2">
+                            {phones.map((p, idx) => (
+                                <div key={idx} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                                    <input
+                                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                        value={p.label ?? ""}
+                                        onChange={(e) => setPhone(idx, { label: e.target.value })}
+                                        placeholder="Local / Sans frais (optionnel)"
+                                    />
+                                    <input
+                                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                        value={p.value ?? ""}
+                                        onChange={(e) => setPhone(idx, { value: e.target.value })}
+                                        placeholder="819-566-1067"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removePhone(idx)}
+                                        className="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                                    >
+                                        Supprimer
+                                    </button>
+                                </div>
+                            ))}
+
+                            {!phones.length ? (
+                                <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                                    Aucun téléphone. Cliquez sur <b>“Ajouter”</b>.
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

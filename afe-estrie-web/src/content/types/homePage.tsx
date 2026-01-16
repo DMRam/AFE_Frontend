@@ -106,6 +106,70 @@ export type FeaturesBlockCMS = {
   subheading?: string;   // paragraph
   items: FeatureItemCMS[];
 };
+export type HomeNewsItemCMS = {
+  id: string;
+  enabled?: boolean;
+  order?: number;
+
+  title?: string;
+  excerpt?: string;
+  href?: string;
+  date?: string;
+  readingTime?: string;
+  coverSrc?: string;
+  coverAlt?: string;
+
+  pageDocId?: string;
+};
+
+export type HomeNewsPreviewCMS = {
+  enabled: boolean;
+  eyebrow?: string;
+  heading?: string;
+  subheading?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  items: HomeNewsItemCMS[];
+};
+
+export type HomeContactCMS = {
+  enabled: boolean;
+  mapUrl?: string;
+  hours?: { label: string; value: string }[];
+  orgName?: string;
+  phones?: { label?: string; value: string }[];
+  email?: string;
+  address?: string;
+  directionsUrl?: string;
+};
+
+export type FooterLinkCMS = {
+  id: string;
+  enabled?: boolean;
+  order?: number;
+  label: string;
+  href: string;
+};
+
+export type FooterColumnCMS = {
+  id: string;
+  enabled?: boolean;
+  order?: number;
+  heading: string;
+  links?: FooterLinkCMS[];
+  // optional “custom” content
+  text?: string;
+  imageSrc?: string;
+  imageAlt?: string;
+};
+
+export type HomeFooterCMS = {
+  enabled: boolean;
+  columns: FooterColumnCMS[];
+  social?: { facebook?: string; linkedin?: string };
+  copyright?: string;
+};
+
 
 export type HomePageCMS = {
   updatedAt?: number;
@@ -117,4 +181,7 @@ export type HomePageCMS = {
   activities: HomeActivitiesPreviewCMS;
   events: HomeEventsPreviewCMS;
   resources: HomeResourcesPreviewCMS;
+  news?: HomeNewsPreviewCMS;
+  contact?: HomeContactCMS;
+  footer?: HomeFooterCMS;
 };

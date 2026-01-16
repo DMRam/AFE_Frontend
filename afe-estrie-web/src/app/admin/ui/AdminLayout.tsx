@@ -449,7 +449,7 @@ export function AdminLayout({
                     {/* Sidebar footer */}
                     <div className="border-t border-gray-200 px-4 py-3">
                         <div className="mb-3 grid grid-cols-2 gap-2">
-                            <button
+                            {/* <button
                                 type="button"
                                 onClick={handlePreview}
                                 className="inline-flex items-center justify-center gap-1.5 border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-gray-50 rounded transition-colors"
@@ -465,7 +465,7 @@ export function AdminLayout({
                             >
                                 <UploadCloud className="h-3 w-3" />
                                 Publier
-                            </button>
+                            </button> */}
                         </div>
 
                         <button
@@ -520,22 +520,22 @@ export function AdminLayout({
                                 </button>
 
                                 {/* Preview */}
-                                <button
+                                {/* <button
                                     onClick={handlePreview}
                                     className="hidden sm:inline-flex items-center gap-2 border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-lg transition-colors"
                                 >
                                     <Eye className="h-4 w-4" />
                                     Aperçu
-                                </button>
+                                </button> */}
 
                                 {/* Publish */}
-                                <button
+                                {/* <button
                                     onClick={handlePublish}
                                     className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-blue-700 rounded-lg transition-colors"
                                 >
                                     <UploadCloud className="h-4 w-4" />
                                     Publier
-                                </button>
+                                </button> */}
 
                                 {/* User menu */}
                                 <div className="relative">
