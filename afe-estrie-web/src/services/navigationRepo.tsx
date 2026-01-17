@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, getDoc, setDoc, updateDoc, writeBatch, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, writeBatch, collection, getDocs } from "firebase/firestore";
 import type { NavItem } from "../content/types/navTypes";
 import { logAdminActivity } from "./audit";
 

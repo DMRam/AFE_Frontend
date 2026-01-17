@@ -20,15 +20,6 @@ import { useNavigate } from "react-router-dom";
 const CLOSE_DELAY = 320;
 const MOBILE_BREAKPOINT = 768; // md
 
-// ---------- types ----------
-interface NavContextValue {
-    openPath: string[];
-    setOpenPath: Dispatch<SetStateAction<string[]>>;
-    onNavigate: (href?: string) => void;
-    closeAll: () => void;
-    isMobile: boolean;
-}
-
 // ---------- utils ----------
 function isHash(href?: string): boolean {
     return !!href && href.startsWith("#");
@@ -53,33 +44,6 @@ function startsWithPath(openPath: string[], parentPath: string[]): boolean {
         if (openPath[i] !== parentPath[i]) return false;
     }
     return true;
-}
-
-function getActivePathFromUrl(
-    items: NavNode[],
-    currentPath: string = window.location.pathname
-): string[] {
-    const findPath = (nodes: NavNode[], path: string[] = []): string[] | null => {
-        for (const node of nodes) {
-            if (node.enabled === false) continue;
-
-            const nodePath = [...path, node.id];
-
-            // Check if current node matches
-            if (node.href === currentPath || node.href === `${currentPath}/`) {
-                return nodePath;
-            }
-
-            // Check children
-            if (node.children) {
-                const childPath = findPath(node.children, nodePath);
-                if (childPath) return childPath;
-            }
-        }
-        return null;
-    };
-
-    return findPath(items) || [];
 }
 
 // ---------- components ----------
@@ -475,7 +439,6 @@ function FlyoutMenu({
 
     // Auto-position based on available space
     const [positionClass, setPositionClass] = useState("left-0");
-    const [alignmentClass, setAlignmentClass] = useState("");
 
     useEffect(() => {
         if (!menuRef.current || !triggerRef?.current || isMobile) return;
@@ -681,7 +644,6 @@ function FlyoutMenu({
                     {nodes.map((node) => {
                         const hasChildren = !!node.children?.length;
                         const nodePath = [...parentPath, node.id];
-                        const childOpen = openPath[level + 1] === node.id;
                         const isNodeExternal = isExternal(node.href);
                         const Icon = hasChildren ? ChevronRight : ExternalLink;
 

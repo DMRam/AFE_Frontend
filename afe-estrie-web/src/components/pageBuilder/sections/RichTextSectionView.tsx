@@ -6,7 +6,6 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { CheckCircle, AlertCircle, Info, Lightbulb, ExternalLink, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
 
 interface RichTextSectionViewProps {
     data: RichTextSection;
@@ -19,7 +18,6 @@ export function RichTextSectionView({
     className = "",
     showTableOfContents = false 
 }: RichTextSectionViewProps) {
-    const [headings, setHeadings] = useState<Array<{ id: string; text: string; level: number }>>([]);
 
     // Extract headings for table of contents
     const extractHeadings = (markdown: string) => {
@@ -133,7 +131,7 @@ export function RichTextSectionView({
         },
         
         // Enhanced blockquotes with different styles based on content
-        blockquote: ({ node, children, ...props }: any) => {
+        blockquote: ({ children }: any) => {
             const text = String(children);
             let type: 'info' | 'warning' | 'tip' | 'success' = 'info';
             let icon = <Info className="w-5 h-5" />;

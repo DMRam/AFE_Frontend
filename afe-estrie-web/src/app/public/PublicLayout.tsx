@@ -1,4 +1,3 @@
-// src/app/public/PublicLayout.tsx
 import { Outlet } from "react-router-dom";
 import { SiteHeader } from "./components/layout/SiteHeader";
 import { SiteNav } from "./components/layout/SiteNav";

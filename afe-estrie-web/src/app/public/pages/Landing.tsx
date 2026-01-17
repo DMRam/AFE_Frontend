@@ -4,8 +4,6 @@ import { Hero } from "../components/landing/Hero";
 import { QuickCards } from "../components/landing/QuickCards";
 import { PartnersStrip } from "../components/landing/PartnersStrip";
 import { ActivitiesPreview } from "../components/landing/ActivitiesPreview";
-import { EventsPreview } from "../components/landing/EventsPreview";
-import { ResourcesPreview } from "../components/landing/ResourcesPreview";
 
 import type { HomePageCMS } from "../../../content/types/homePage";
 import { getHomePage, seedHomePage, saveHomePage } from "../../../services/homePageRepo";
@@ -76,20 +74,6 @@ export default function Landing() {
         href: c.href,
       }))
       .filter((c) => c.title);
-  }, [home]);
-
-  // PARTNERS LOGOS
-  const partnerLogos = useMemo(() => {
-    const logos = home?.partners?.logos ?? [];
-    return logos
-      .filter((l) => l.enabled)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .map((l) => ({
-        id: l.id,
-        alt: l.alt ?? "",
-        src: l.src,
-      }))
-      .filter((l) => l.src);
   }, [home]);
 
   // ONE-TIME EMPTY STATE (doc missing)

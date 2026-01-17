@@ -61,57 +61,57 @@ const normNewsItems = (items: any[] | undefined) =>
         pageDocId: it.pageDocId ?? "",
     }));
 
-function setHomeContactPatch(setDraft: any, patch: any) {
-    setDraft((d: any) => ({
-        ...(d ?? {}),
-        contact: {
-            ...(d?.contact ?? {}),
-            ...patch,
-        },
-    }));
-}
+// function setHomeContactPatch(setDraft: any, patch: any) {
+//     setDraft((d: any) => ({
+//         ...(d ?? {}),
+//         contact: {
+//             ...(d?.contact ?? {}),
+//             ...patch,
+//         },
+//     }));
+// }
 
-function updateContactListItem(
-    setDraft: any,
-    key: "hours" | "phones",
-    idx: number,
-    patch: any
-) {
-    setDraft((d: any) => {
-        const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
-        const cur = list[idx] ?? {};
-        list[idx] = { ...cur, ...patch };
-        return {
-            ...(d ?? {}),
-            contact: {
-                ...(d?.contact ?? {}),
-                [key]: list,
-            },
-        };
-    });
-}
+// function updateContactListItem(
+//     setDraft: any,
+//     key: "hours" | "phones",
+//     idx: number,
+//     patch: any
+// ) {
+//     setDraft((d: any) => {
+//         const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
+//         const cur = list[idx] ?? {};
+//         list[idx] = { ...cur, ...patch };
+//         return {
+//             ...(d ?? {}),
+//             contact: {
+//                 ...(d?.contact ?? {}),
+//                 [key]: list,
+//             },
+//         };
+//     });
+// }
 
-function addContactListItem(setDraft: any, key: "hours" | "phones") {
-    setDraft((d: any) => {
-        const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
-        list.push(key === "hours" ? { label: "", value: "" } : { label: "", value: "" });
-        return {
-            ...(d ?? {}),
-            contact: { ...(d?.contact ?? {}), [key]: list },
-        };
-    });
-}
+// function addContactListItem(setDraft: any, key: "hours" | "phones") {
+//     setDraft((d: any) => {
+//         const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
+//         list.push(key === "hours" ? { label: "", value: "" } : { label: "", value: "" });
+//         return {
+//             ...(d ?? {}),
+//             contact: { ...(d?.contact ?? {}), [key]: list },
+//         };
+//     });
+// }
 
-function removeContactListItem(setDraft: any, key: "hours" | "phones", idx: number) {
-    setDraft((d: any) => {
-        const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
-        list.splice(idx, 1);
-        return {
-            ...(d ?? {}),
-            contact: { ...(d?.contact ?? {}), [key]: list },
-        };
-    });
-}
+// function removeContactListItem(setDraft: any, key: "hours" | "phones", idx: number) {
+//     setDraft((d: any) => {
+//         const list = Array.isArray(d?.contact?.[key]) ? [...d.contact[key]] : [];
+//         list.splice(idx, 1);
+//         return {
+//             ...(d ?? {}),
+//             contact: { ...(d?.contact ?? {}), [key]: list },
+//         };
+//     });
+// }
 
 
 

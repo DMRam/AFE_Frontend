@@ -4,6 +4,9 @@ import { AdminPanel, AdminStat } from "../ui/AdminPanel";
 import { NavManager } from "../sections/NavManager";
 import { PagesManager } from "../sections/PagesManager";
 import { Clock, FileText, Navigation, Users } from "lucide-react";
+import { FooterManager } from "../sections/FooterManager";
+import { LayoutTemplate } from "lucide-react";
+
 
 import {
   collection,
@@ -527,6 +530,20 @@ export default function AdminDashboard() {
             </AdminPanel>
           </div>
         );
+
+      case "footer":
+        return (
+          <div className="mx-auto max-w-6xl">
+            <AdminPanel
+              title="Gestionnaire du footer"
+              description="Coordonnées, liens, actualités, partenaire + lien admin"
+              right={<BackButton onClick={() => setActiveSection("overview")} />}
+            >
+              <FooterManager />
+            </AdminPanel>
+          </div>
+        );
+
 
       default:
         return (

@@ -18,14 +18,14 @@ import {
     ChevronDown,
     Save,
     Upload,
-    Image as ImageIcon,
+    Image as _ImageIcon,
     FileText,
     Type,
     Columns,
     AlertCircle,
     CheckCircle2,
     XCircle,
-    Plus
+    
 } from "lucide-react";
 
 type EditorMode = "simple" | "json";

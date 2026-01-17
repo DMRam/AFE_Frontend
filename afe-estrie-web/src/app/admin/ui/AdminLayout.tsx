@@ -8,24 +8,15 @@ import {
     PanelBottom,
     Settings,
     Search,
-    Eye,
-    UploadCloud,
     Menu,
-    X,
-    ChevronRight,
     User,
     LogOut,
     ChevronDown,
-    ExternalLink,
     Key,
-    HelpCircle,
     Bell,
-    Globe,
-    Layers,
     Image as ImageIcon,
-    MessageSquare,
     Database,
-    Shield,
+    LayoutTemplate,
 } from "lucide-react";
 
 export type AdminSectionId =
@@ -37,7 +28,9 @@ export type AdminSectionId =
     | "footer"
     | "settings"
     | "campaigns"
-    | "activity";
+    | "activity"
+    | "footer";
+
 
 interface UserInfo {
     name: string;
@@ -241,8 +234,6 @@ export function AdminLayout({
     user = { name: "Administrateur", role: "Admin", email: "admin@example.com" },
     isLoading = false,
     onSeedEquipePage,
-    onPublish,
-    onPreview,
     onLogout,
 }: AdminLayoutProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -340,6 +331,11 @@ export function AdminLayout({
             description: "Système et sécurité",
             category: "Configuration"
         },
+        {
+            id: "footer",
+            label: "Footer",
+            icon: LayoutTemplate,
+        }
     ], []);
 
     const groupedNavItems = useMemo(() => {
@@ -366,22 +362,6 @@ export function AdminLayout({
             alert('Fonction de création de page "Équipe" non implémentée');
         }
     }, [onSeedEquipePage]);
-
-    const handlePublish = useCallback(() => {
-        if (onPublish) {
-            onPublish();
-        } else {
-            alert('Fonctionnalité de publication à venir');
-        }
-    }, [onPublish]);
-
-    const handlePreview = useCallback(() => {
-        if (onPreview) {
-            onPreview();
-        } else {
-            window.open('/', '_blank');
-        }
-    }, [onPreview]);
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900">

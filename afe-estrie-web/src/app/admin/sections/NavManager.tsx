@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { getNavigation, saveNavigation } from "../../../services/navigationRepo";
 import type { NavItem, NavNode } from "../../../content/types/navTypes";
 import {
-    Plus, ChevronDown, ChevronRight, Trash2, Edit2, Eye, EyeOff,
+    Plus, ChevronDown, ChevronRight, Trash2, Edit2,
     Save, RefreshCw, Search, X, Menu as MenuIcon, Folder, File,
     Layers, Check, Hash, Link, Globe
 } from "lucide-react";
@@ -49,13 +49,13 @@ function deepEqual(a: any, b: any) {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function move<T>(arr: T[], from: number, to: number) {
-    if (from === to) return arr;
-    const copy = [...arr];
-    const [item] = copy.splice(from, 1);
-    copy.splice(to, 0, item);
-    return copy;
-}
+// function move<T>(arr: T[], from: number, to: number) {
+//     if (from === to) return arr;
+//     const copy = [...arr];
+//     const [item] = copy.splice(from, 1);
+//     copy.splice(to, 0, item);
+//     return copy;
+// }
 
 function collectIds(items: NavItem[]) {
     const used = new Set<string>();
@@ -108,39 +108,39 @@ function normalizeNav(items: NavItem[] = []): NavItem[] {
         }));
 }
 
-function contains(q: string, value?: string) {
-    if (!q) return true;
-    return (value ?? "").toLowerCase().includes(q.toLowerCase());
-}
+// function contains(q: string, value?: string) {
+//     if (!q) return true;
+//     return (value ?? "").toLowerCase().includes(q.toLowerCase());
+// }
 
 /** ---------------------------------------------
  * UI Components
  * --------------------------------------------- */
-function StatusBadge({ enabled, size = "sm" }: { enabled: boolean | undefined; size?: "sm" | "md" }) {
-    const sizeClasses = {
-        sm: "px-2 py-0.5 text-xs",
-        md: "px-3 py-1 text-sm"
-    };
+// function StatusBadge({ enabled, size = "sm" }: { enabled: boolean | undefined; size?: "sm" | "md" }) {
+//     const sizeClasses = {
+//         sm: "px-2 py-0.5 text-xs",
+//         md: "px-3 py-1 text-sm"
+//     };
 
-    return (
-        <span className={`inline-flex items-center rounded-full ${sizeClasses[size]} ${enabled
-            ? "bg-green-100 text-green-700 border border-green-200"
-            : "bg-gray-100 text-gray-600 border border-gray-200"
-            }`}>
-            {enabled ? (
-                <>
-                    <Eye className="w-3 h-3 mr-1" />
-                    Visible
-                </>
-            ) : (
-                <>
-                    <EyeOff className="w-3 h-3 mr-1" />
-                    Hidden
-                </>
-            )}
-        </span>
-    );
-}
+//     return (
+//         <span className={`inline-flex items-center rounded-full ${sizeClasses[size]} ${enabled
+//             ? "bg-green-100 text-green-700 border border-green-200"
+//             : "bg-gray-100 text-gray-600 border border-gray-200"
+//             }`}>
+//             {enabled ? (
+//                 <>
+//                     <Eye className="w-3 h-3 mr-1" />
+//                     Visible
+//                 </>
+//             ) : (
+//                 <>
+//                     <EyeOff className="w-3 h-3 mr-1" />
+//                     Hidden
+//                 </>
+//             )}
+//         </span>
+//     );
+// }
 
 function ActionButton({
     icon: Icon,
@@ -1113,7 +1113,7 @@ export function NavManager() {
                     />
                 ) : (
                     <div className="space-y-4">
-                        {filteredItems.map((navbarItem, index) => (
+                        {filteredItems.map((navbarItem, _index) => (
                             <div key={navbarItem.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200">
                                 {/* Level 1: Navbar Item */}
                                 <div className="p-4 border-b border-gray-100">
@@ -1224,7 +1224,7 @@ export function NavManager() {
                                         </div>
 
                                         <div className="space-y-2">
-                                            {navbarItem.children.map((menuItem, menuIndex) => (
+                                            {navbarItem.children.map((menuItem, _menuIndex) => (
                                                 <div key={menuItem.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors">
                                                     {/* Level 2: Menu Item Header */}
                                                     <div className="p-3">
