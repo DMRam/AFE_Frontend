@@ -1,19 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
-import { Mail, MapPin, Phone } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+    Mail,
+    MapPin,
+    Phone,
+    Facebook,
+    Linkedin,
+    Instagram,
+    Youtube,
+    ExternalLink,
+} from "lucide-react";
 import type { FooterCMS } from "../../../../content/types/footer";
 import { getFooter } from "../../../../services/footerRepo";
 
 const FALLBACK_ADMIN_URL = "https://afe-sherdev.web.app/admin/login";
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="mb-4">
-            <h3 className="text-sm font-medium text-white/85">{children}</h3>
-            <div className="mt-2 h-[2px] w-5 rounded bg-[#af2511]" />
-        </div>
-    );
-}
-
+// -------- main component --------
 export function SiteFooter() {
     const [footer, setFooter] = useState<FooterCMS | null>(null);
 
@@ -53,185 +54,307 @@ export function SiteFooter() {
     const adminLabel =
         (footer as any)?.admin?.label ||
         (footer as any)?.bottom?.adminLabel ||
-        "Ouverture de session";
+        "Administration";
+
+    const hasBrand = !!footer?.brand?.logoSrc;
 
     return (
         <footer className="bg-black text-white">
-            <div className="mx-auto max-w-6xl px-6 py-14">
-                {/* top row (logo left, social right) */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        {footer?.brand?.logoSrc ? (
-                            <img
-                                src={footer.brand.logoSrc}
-                                alt={footer.brand.alt ?? "AFE"}
-                                className="h-10 w-auto"
-                            />
-                        ) : (
-                            <div className="h-10 w-28 rounded bg-white/10" />
-                        )}
-                    </div>
+            <div className="mx-auto max-w-7xl px-6 py-12">
+                {/* Top section with logo and contact */}
+                <div className="border-b border-white/10 pb-8">
+                    <div className="grid gap-8 md:grid-cols-12">
+                        {/* Logo and tagline */}
+                        <div className="md:col-span-4">
+                            <div className="space-y-4">
+                                {hasBrand ? (
+                                    <img
+                                        src={footer!.brand!.logoSrc}
+                                        alt={footer?.brand?.alt ?? "AFE"}
+                                        className="h-20 w-auto"
+                                    />
+                                ) : (
+                                    <div className="h-10 w-32 rounded bg-white/10" />
+                                )}
+                                
+                                {(footer as any)?.brand?.tagline ? (
+                                    <p className="text-sm text-white/70 max-w-xs">
+                                        {(footer as any).brand.tagline}
+                                    </p>
+                                ) : null}
+                            </div>
+                        </div>
 
-                    <div className="flex items-center gap-4 text-white/85">
-                        {footer?.social?.facebook ? (
-                            <a
-                                href={footer.social.facebook}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="hover:text-white"
-                                aria-label="Facebook"
-                                title="Facebook"
-                            >
-                                f
-                            </a>
-                        ) : null}
-                        {footer?.social?.linkedin ? (
-                            <a
-                                href={footer.social.linkedin}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="hover:text-white"
-                                aria-label="LinkedIn"
-                                title="LinkedIn"
-                            >
-                                in
-                            </a>
-                        ) : null}
-                    </div>
-                </div>
-
-                <div className="mt-10 border-t border-white/10" />
-
-                {/* 4 columns */}
-                <div className="mt-10 grid gap-10 md:grid-cols-4">
-                    {/* Contact */}
-                    <div>
-                        <SectionTitle>{footer?.contact?.title ?? "Nous contacter"}</SectionTitle>
-
-                        <div className="space-y-3 text-sm text-white/80">
-                            {(footer?.contact?.phones ?? []).map((p, i) => (
-                                <div key={i} className="flex items-start gap-3">
-                                    <Phone className="mt-0.5 h-4 w-4 text-white/70" />
-                                    <span>{p}</span>
-                                </div>
-                            ))}
-
-                            {footer?.contact?.email ? (
-                                <div className="flex items-start gap-3">
-                                    <Mail className="mt-0.5 h-4 w-4 text-white/70" />
-                                    <a className="hover:text-white" href={`mailto:${footer.contact.email}`}>
-                                        {footer.contact.email}
-                                    </a>
-                                </div>
-                            ) : null}
-
-                            {(footer?.contact?.addressLines ?? []).length ? (
-                                <div className="flex items-start gap-3">
-                                    <MapPin className="mt-0.5 h-4 w-4 text-white/70" />
-                                    <div className="space-y-1">
-                                        {(footer?.contact?.addressLines ?? []).map((l, i) => (
-                                            <div key={i}>{l}</div>
-                                        ))}
+                        {/* Contact info */}
+                        <div className="md:col-span-4">
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
+                                <h3 className="text-sm font-semibold text-white">
+                                    {footer?.contact?.title ?? "Nous contacter"}
+                                </h3>
+                            </div>
+                            <div className="space-y-3">
+                                {footer?.contact?.phones?.map((phone, i) => (
+                                    <div key={i} className="flex items-center gap-3 text-sm text-white/80">
+                                        <Phone className="h-4 w-4 text-[#af2511]" />
+                                        <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-white hover:text-[#af2511] transition-colors">
+                                            {phone}
+                                        </a>
                                     </div>
-                                </div>
-                            ) : null}
+                                ))}
+                                
+                                {footer?.contact?.email ? (
+                                    <div className="flex items-center gap-3 text-sm text-white/80">
+                                        <Mail className="h-4 w-4 text-[#af2511]" />
+                                        <a href={`mailto:${footer.contact.email}`} className="hover:text-white hover:text-[#af2511] transition-colors">
+                                            {footer.contact.email}
+                                        </a>
+                                    </div>
+                                ) : null}
+                                
+                                {footer?.contact?.addressLines?.length ? (
+                                    <div className="flex items-start gap-3 text-sm text-white/80">
+                                        <MapPin className="mt-0.5 h-4 w-4 text-[#af2511]" />
+                                        <div className="space-y-1">
+                                            {footer.contact.addressLines.map((line, i) => (
+                                                <div key={i}>{line}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </div>
 
-                            {/* Admin login (team) */}
-                            <div className="pt-2">
-                                <a
-                                    href={adminHref}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-sm font-semibold text-white/85 hover:text-white"
-                                >
-                                    {adminLabel}
-                                    <span className="text-white/50">↗</span>
-                                </a>
+                        {/* Social links */}
+                        <div className="md:col-span-4">
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
+                                <h3 className="text-sm font-semibold text-white">
+                                    Nous suivre
+                                </h3>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {footer?.social?.facebook && (
+                                    <a
+                                        href={footer.social.facebook}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
+                                        aria-label="Facebook"
+                                    >
+                                        <Facebook className="h-5 w-5" />
+                                    </a>
+                                )}
+                                {footer?.social?.linkedin && (
+                                    <a
+                                        href={footer.social.linkedin}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
+                                        aria-label="LinkedIn"
+                                    >
+                                        <Linkedin className="h-5 w-5" />
+                                    </a>
+                                )}
+                                {footer?.social?.instagram && (
+                                    <a
+                                        href={footer.social.instagram}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
+                                        aria-label="Instagram"
+                                    >
+                                        <Instagram className="h-5 w-5" />
+                                    </a>
+                                )}
+                                {footer?.social?.youtube && (
+                                    <a
+                                        href={footer.social.youtube}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
+                                        aria-label="YouTube"
+                                    >
+                                        <Youtube className="h-5 w-5" />
+                                    </a>
+                                )}
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Links */}
-                    <div>
-                        <SectionTitle>{footer?.links?.title ?? "Liens"}</SectionTitle>
-                        <ul className="space-y-3 text-sm text-white/80">
-                            {links.map((x) => (
-                                <li key={x.id}>
-                                    <a className="hover:text-white" href={x.href}>
-                                        {x.label}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {/* News */}
-                    <div>
-                        <SectionTitle>{footer?.news?.title ?? "Nos Actualités"}</SectionTitle>
-                        <div className="space-y-5 text-sm text-white/80">
-                            {news.slice(0, 3).map((n) => (
-                                <a key={n.id} href={n.href} className="block hover:text-white">
-                                    {n.date ? (
-                                        <div className="mb-1 text-xs uppercase tracking-wide text-white/45">
-                                            {n.date}
-                                        </div>
-                                    ) : null}
-                                    <div className="line-clamp-2 font-medium text-white/85">{n.title}</div>
-                                </a>
-                            ))}
+                {/* Main content grid */}
+                <div className="py-8">
+                    <div className="grid gap-8 md:grid-cols-12">
+                        {/* Quick links */}
+                        <div className="md:col-span-3">
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
+                                <h3 className="text-sm font-semibold text-white">
+                                    {footer?.links?.title ?? "Liens rapides"}
+                                </h3>
+                            </div>
+                            <ul className="space-y-2">
+                                {links.map((link) => (
+                                    <li key={link.id} className="flex items-center gap-3">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]" />
+                                        <a 
+                                            href={link.href} 
+                                            className="text-sm text-white/70 hover:text-white hover:text-[#af2511] transition-colors"
+                                        >
+                                            {link.label}
+                                        </a>
+                                    </li>
+                                ))}
+                                {links.length === 0 && (
+                                    <li className="flex items-center gap-3">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/30" />
+                                        <span className="text-sm text-white/50">Aucun lien</span>
+                                    </li>
+                                )}
+                            </ul>
                         </div>
-                    </div>
 
-                    {/* Partners */}
-                    <div>
-                        <SectionTitle>{footer?.partner?.title ?? "Partenaires"}</SectionTitle>
-
-                        {partners.length ? (
-                            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
-                                {partners.map((p) => (
-                                    <a
-                                        key={p.id}
-                                        href={p.href || "#"}
-                                        target={p.href ? "_blank" : undefined}
-                                        rel={p.href ? "noreferrer" : undefined}
-                                        className="block overflow-hidden rounded-lg bg-white p-2"
+                        {/* Recent news */}
+                        <div className="md:col-span-3">
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
+                                <h3 className="text-sm font-semibold text-white">
+                                    {footer?.news?.title ?? "Actualités"}
+                                </h3>
+                            </div>
+                            <div className="space-y-4">
+                                {news.slice(0, 2).map((item) => (
+                                    <a 
+                                        key={item.id} 
+                                        href={item.href}
+                                        className="block group pl-2 border-l border-[#af2511]/30 hover:border-[#af2511] transition-colors"
                                     >
-                                        {p.imageSrc ? (
-                                            <img
-                                                src={p.imageSrc}
-                                                alt={p.name}
-                                                className="h-24 w-full object-contain"
+                                        <div className="text-xs text-white/60 mb-1">
+                                            {item.date}
+                                        </div>
+                                        <div className="text-sm text-white/80 group-hover:text-white group-hover:text-[#af2511] transition-colors">
+                                            {item.title}
+                                        </div>
+                                    </a>
+                                ))}
+                                {news.length === 0 && (
+                                    <div className="flex items-center gap-3 pl-2 border-l border-[#af2511]/30">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/30" />
+                                        <div className="text-sm text-white/50">Aucune actualité</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Partners */}
+                        <div className="md:col-span-3">
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
+                                <h3 className="text-sm font-semibold text-white">
+                                    {footer?.partner?.title ?? "Partenaires"}
+                                </h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {partners.slice(0, 4).map((partner) => (
+                                    <a
+                                        key={partner.id}
+                                        href={partner.href || '#'}
+                                        target={partner.href ? "_blank" : undefined}
+                                        rel={partner.href ? "noopener noreferrer" : undefined}
+                                        className="aspect-square bg-white rounded-lg flex items-center justify-center p-2 hover:opacity-90 transition-opacity border border-transparent hover:border-[#af2511]/30"
+                                    >
+                                        {partner.imageSrc ? (
+                                            <img 
+                                                src={partner.imageSrc} 
+                                                alt={partner.name}
+                                                className="max-h-full max-w-full object-contain"
                                             />
                                         ) : (
-                                            <div className="h-24 w-full rounded bg-black/5" />
+                                            <span className="text-xs text-black/60 text-center">{partner.name}</span>
                                         )}
                                     </a>
                                 ))}
+                                {partners.length === 0 && (
+                                    <div className="col-span-2 flex items-center gap-3 pl-2 border-l border-[#af2511]/30">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/30" />
+                                        <div className="text-sm text-white/50">Aucun partenaire</div>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <div className="h-24 w-full rounded-lg bg-white/10" />
-                        )}
+                        </div>
+
+                        {/* Admin access */}
+                        <div className="md:col-span-3">
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
+                                <h3 className="text-sm font-semibold text-white">
+                                    Accès professionnel
+                                </h3>
+                            </div>
+                            <a
+                                href={adminHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-[#af2511]/10 hover:border-[#af2511]/30 hover:text-[#af2511] transition-colors"
+                            >
+                                {adminLabel}
+                                <ExternalLink className="h-4 w-4" />
+                            </a>
+                        </div>
                     </div>
                 </div>
 
-                {/* bottom row (policies left, credit right) */}
-                <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-white/60 md:flex-row">
-                    <div className="flex flex-col items-center gap-3 md:items-start">
-                        {footer?.bottom?.policyHref ? (
-                            <a className="hover:text-white" href={footer.bottom.policyHref}>
-                                {footer.bottom.policyLabel ?? "Politique de confidentialité"}
-                            </a>
-                        ) : null}
-                        {footer?.bottom?.cookiesHref ? (
-                            <a className="hover:text-white" href={footer.bottom.cookiesHref}>
-                                {footer.bottom.cookiesLabel ?? "Politique de cookies"}
-                            </a>
-                        ) : null}
-                    </div>
+                {/* Bottom bar */}
+                <div className="border-t border-white/10 pt-8">
+                    <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+                        {/* Copyright */}
+                        <div className="text-sm text-white/60">
+                            © {new Date().getFullYear()} {footer?.brand?.name || "AFE"}. Tous droits réservés.
+                        </div>
 
-                    {footer?.bottom?.creditText ? (
-                        <div className="text-center md:text-right">{footer.bottom.creditText}</div>
-                    ) : null}
+                        {/* Legal links */}
+                        <div className="flex items-center gap-4 text-sm text-white/60">
+                            {footer?.bottom?.policyHref && (
+                                <a 
+                                    href={footer.bottom.policyHref}
+                                    className="hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                                >
+                                    <div className="h-1 w-1 rounded-full bg-[#af2511]" />
+                                    {footer.bottom.policyLabel ?? "Confidentialité"}
+                                </a>
+                            )}
+                            {footer?.bottom?.cookiesHref && (
+                                <a 
+                                    href={footer.bottom.cookiesHref}
+                                    className="hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                                >
+                                    <div className="h-1 w-1 rounded-full bg-[#af2511]" />
+                                    {footer.bottom.cookiesLabel ?? "Cookies"}
+                                </a>
+                            )}
+                            {footer?.bottom?.termsHref && (
+                                <a 
+                                    href={footer.bottom.termsHref}
+                                    className="hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                                >
+                                    <div className="h-1 w-1 rounded-full bg-[#af2511]" />
+                                    {footer.bottom.termsLabel ?? "Conditions d'utilisation"}
+                                </a>
+                            )}
+                        </div>
+
+                        {/* Credit */}
+                        {footer?.bottom?.creditText && (
+                            <a 
+                                href="https://sherdev.com/"
+                                className="text-sm text-white/60 hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                            >
+                                <div className="h-1 w-1 rounded-full bg-[#af2511]" />
+                                {footer.bottom.creditText}
+                            </a>
+                        )}
+                    </div>
                 </div>
             </div>
         </footer>

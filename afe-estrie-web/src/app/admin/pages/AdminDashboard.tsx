@@ -5,7 +5,6 @@ import { NavManager } from "../sections/NavManager";
 import { PagesManager } from "../sections/PagesManager";
 import { Clock, FileText, Navigation, Users } from "lucide-react";
 import { FooterManager } from "../sections/FooterManager";
-import { LayoutTemplate } from "lucide-react";
 
 
 import {
@@ -22,6 +21,7 @@ import {
 import { db } from "../../../services/firebase";
 import { Timestamp } from "firebase/firestore";
 import HomePageManager from "../sections/HomePageManager";
+import { CookieConsentManager } from "../sections/CookieConsentManager";
 
 // ---- CONFIG ----
 const NAV_DOC_ID = "navigation";
@@ -543,6 +543,20 @@ export default function AdminDashboard() {
             </AdminPanel>
           </div>
         );
+
+      case "cookie":
+        return (
+          <div className="mx-auto max-w-6xl">
+            <AdminPanel
+              title="Consentement cookies"
+              description="Texte, boutons, liens de politiques et préférences"
+              right={<BackButton onClick={() => setActiveSection("overview")} />}
+            >
+              <CookieConsentManager />
+            </AdminPanel>
+          </div>
+        );
+
 
 
       default:

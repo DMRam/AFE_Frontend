@@ -34,6 +34,16 @@ export async function seedFooterIfMissing() {
       cookiesHref: "/cookies",
       creditText: "Powered by SherDev",
     },
+    socialFloating: {
+      enabled: true,
+      items: [
+        { id: "facebook", label: "Facebook", href: "https://facebook.com/yourpage", enabled: true, order: 1 },
+        { id: "linkedin", label: "LinkedIn", href: "https://linkedin.com/company/yourpage", enabled: true, order: 2 },
+        { id: "instagram", label: "Instagram", href: "https://instagram.com/yourpage", enabled: true, order: 3 },
+        { id: "youtube", label: "YouTube", href: "https://youtube.com/c/yourchannel", enabled: true, order: 4 },
+      ],
+    },
+
   };
 
   await setDoc(FOOTER_REF, seed, { merge: false });

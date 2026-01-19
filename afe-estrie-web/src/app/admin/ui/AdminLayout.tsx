@@ -17,6 +17,7 @@ import {
     Image as ImageIcon,
     Database,
     LayoutTemplate,
+    Cookie,
 } from "lucide-react";
 
 export type AdminSectionId =
@@ -29,7 +30,8 @@ export type AdminSectionId =
     | "settings"
     | "campaigns"
     | "activity"
-    | "footer";
+    | "footer"
+    | "cookie"
 
 
 interface UserInfo {
@@ -335,6 +337,12 @@ export function AdminLayout({
             id: "footer",
             label: "Footer",
             icon: LayoutTemplate,
+        },
+        {
+            id: "cookie",
+            label: "Cookies",
+            icon: Cookie,
+            desc: "Consentement et liens",
         }
     ], []);
 

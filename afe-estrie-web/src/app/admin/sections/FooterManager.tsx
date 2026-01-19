@@ -179,7 +179,7 @@ export function FooterManager() {
                     </div>
                 </section>
 
-                                
+
                 {/* CONTACT */}
                 <section className="rounded-xl border p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -399,6 +399,68 @@ export function FooterManager() {
                         </label>
                     </div>
                 </section>
+
+                {/* FLOATING SOCIAL (for the floating buttons) */}
+                <section className="rounded-xl border p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h2 className="font-semibold">Floating Social</h2>
+                        {/* if you add socialFloating to FooterCMS type, use SaveSectionButton section="socialFloating" */}
+                        <button
+                            onClick={() => saveSection("socialFloating" as any)}
+                            disabled={!isSectionDirty("socialFloating" as any) || savingKey !== null}
+                            className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50 hover:bg-gray-50"
+                        >
+                            {savingKey === "socialFloating" ? "Saving…" : isSectionDirty("socialFloating" as any) ? "Save" : "Saved"}
+                        </button>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm">
+                        <input
+                            type="checkbox"
+                            checked={(footer as any).socialFloating?.enabled !== false}
+                            onChange={(e) =>
+                                set({
+                                    socialFloating: {
+                                        ...((footer as any).socialFloating ?? {}),
+                                        enabled: e.target.checked,
+                                        items: ((footer as any).socialFloating?.items ?? []).length
+                                            ? (footer as any).socialFloating.items
+                                            : [
+                                                { id: "facebook", label: "Facebook", href: "", enabled: true, order: 1 },
+                                                { id: "linkedin", label: "LinkedIn", href: "", enabled: true, order: 2 },
+                                                { id: "instagram", label: "Instagram", href: "", enabled: true, order: 3 },
+                                                { id: "youtube", label: "YouTube", href: "", enabled: true, order: 4 },
+                                            ],
+                                    },
+                                } as any)
+                            }
+                        />
+                        Enabled (show floating social buttons)
+                    </label>
+
+                    <ListCrud
+                        title="Networks"
+                        items={(footer as any).socialFloating?.items ?? []}
+                        onChange={(items) =>
+                            set({
+                                socialFloating: {
+                                    ...((footer as any).socialFloating ?? { enabled: true }),
+                                    items,
+                                },
+                            } as any)
+                        }
+                        createItem={() => ({
+                            id: uid("social"),
+                            label: "New social",
+                            href: "",
+                            enabled: true,
+                            order: (((footer as any).socialFloating?.items?.length ?? 0) + 1),
+                        })}
+                        // IMPORTANT: keep id/label/href editable; enabled & order are already handled by ListCrud UI
+                        fields={["id", "label", "href"]}
+                    />
+                </section>
+
             </div>
         </div>
     );

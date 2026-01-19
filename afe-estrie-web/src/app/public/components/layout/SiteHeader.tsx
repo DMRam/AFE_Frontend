@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import logoFooter from "../../../../assets/logo/logo-footer.png";
+import { Heart, UserPlus } from "lucide-react";
 import { MemberModal } from "../../../../components/modals/MemberModal";
 import { useNavigation } from "../../../../hooks/useNavigation";
 import type { NavItem, NavNode } from "../../../../content/types/navTypes";
@@ -139,6 +140,9 @@ export function SiteHeader() {
           </div>
         </a>
 
+
+
+
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-2">
           <a
@@ -147,16 +151,20 @@ export function SiteHeader() {
               e.preventDefault();
               scrollToHashWithOffset("#don", 92);
             }}
-            className="inline-flex items-center rounded-md border border-red-600 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+            className="inline-flex items-center gap-2 rounded-full border border-red-600/70 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:border-red-700 hover:bg-red-50 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
           >
+            <Heart className="h-4 w-4" aria-hidden="true" />
+
             Faire un don
           </a>
 
           <button
             type="button"
             onClick={() => setMemberOpen(true)}
-            className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
           >
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
+
             Devenir membre
           </button>
         </div>
@@ -218,8 +226,10 @@ export function SiteHeader() {
                     <button
                       type="button"
                       onClick={() => handleNavigate("#don")}
-                      className="flex-1 rounded-lg border border-red-600 px-4 py-2 text-center text-sm font-semibold text-red-600"
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-600/70 bg-white px-4 py-2 text-center text-sm font-semibold text-red-700 shadow-sm"
                     >
+                      <Heart className="h-4 w-4" aria-hidden="true" />
+
                       Faire un don
                     </button>
 
@@ -229,8 +239,9 @@ export function SiteHeader() {
                         closeDrawer();
                         setMemberOpen(true);
                       }}
-                      className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white"
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm"
                     >
+                      <UserPlus className="h-4 w-4" aria-hidden="true" />
                       Devenir membre
                     </button>
                   </div>
