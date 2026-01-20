@@ -3,6 +3,7 @@ import { SiteHeader } from "./components/layout/SiteHeader";
 import { SiteNav } from "./components/layout/SiteNav";
 import { SiteFooter } from "./components/layout/SiteFooter";
 import { InfoLetterSection } from "./pages/InfoLetterSection";
+import { FloatingSocial } from "./components/FloatingSocial";
 
 export function PublicLayout() {
   return (
@@ -13,6 +14,7 @@ export function PublicLayout() {
         <Outlet />
         <InfoLetterSection />
       </main>
+      <FloatingSocial />
       <SiteFooter />
     </div>
   );

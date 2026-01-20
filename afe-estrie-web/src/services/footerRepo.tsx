@@ -1,4 +1,3 @@
-// services/footerRepo.ts
 import { db } from "./firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import type { FooterCMS } from "../content/types/footer";

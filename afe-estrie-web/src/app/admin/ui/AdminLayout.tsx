@@ -4,7 +4,6 @@ import {
     Navigation,
     FileText,
     Home,
-    CalendarDays,
     PanelBottom,
     Settings,
     Search,
@@ -12,7 +11,6 @@ import {
     User,
     LogOut,
     ChevronDown,
-    Key,
     Bell,
     Image as ImageIcon,
     Database,
@@ -273,14 +271,6 @@ export function AdminLayout({
             category: "Général"
         },
         {
-            id: "activity",
-            label: "Activité",
-            icon: Bell,
-            badge: "Nouveau",
-            description: "Historique des modifications",
-            category: "Général"
-        },
-        {
             id: "pages",
             label: "Pages",
             icon: FileText,
@@ -305,23 +295,16 @@ export function AdminLayout({
             id: "campaigns",
             label: "Campagnes",
             icon: ImageIcon,
-            badge: "Bientôt",
+            badge: "NEW",
             description: "Contenus promotionnels",
             category: "Marketing"
         },
-        {
-            id: "events",
-            label: "Événements",
-            icon: CalendarDays,
-            badge: "Bientôt",
-            description: "Calendrier et annonces",
-            category: "Marketing"
-        },
+        
         {
             id: "footer",
             label: "Pied de page",
             icon: PanelBottom,
-            badge: "Bientôt",
+            badge: "",
             description: "Configuration du footer",
             category: "Configuration"
         },
@@ -329,7 +312,7 @@ export function AdminLayout({
             id: "settings",
             label: "Paramètres",
             icon: Settings,
-            badge: "Bientôt",
+            badge: "TODO",
             description: "Système et sécurité",
             category: "Configuration"
         },
@@ -456,13 +439,13 @@ export function AdminLayout({
                             </button> */}
                         </div>
 
-                        <button
+                        {/* <button
                             onClick={handleSeedEquipePage}
                             className="w-full text-left text-xs text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-50 rounded transition-colors flex items-center gap-1.5"
                         >
                             <Key className="h-3 w-3" />
                             Page "Équipe"
-                        </button>
+                        </button> */}
                     </div>
                 </aside>
 

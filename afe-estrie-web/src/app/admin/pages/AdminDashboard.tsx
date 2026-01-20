@@ -22,6 +22,7 @@ import { db } from "../../../services/firebase";
 import { Timestamp } from "firebase/firestore";
 import HomePageManager from "../sections/HomePageManager";
 import { CookieConsentManager } from "../sections/CookieConsentManager";
+import { CampaignsManager } from "../sections/CampaignsManager";
 
 // ---- CONFIG ----
 const NAV_DOC_ID = "navigation";
@@ -556,6 +557,20 @@ export default function AdminDashboard() {
             </AdminPanel>
           </div>
         );
+
+      case "campaigns":
+        return (
+          <div className="mx-auto max-w-6xl">
+            <AdminPanel
+              title="Campagnes"
+              description="Créer et envoyer des contenus promotionnels"
+              right={<BackButton onClick={() => setActiveSection("overview")} />}
+            >
+              <CampaignsManager />
+            </AdminPanel>
+          </div>
+        );
+
 
 
 

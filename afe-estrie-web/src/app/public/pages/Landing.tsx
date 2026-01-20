@@ -137,7 +137,7 @@ export default function Landing() {
 
       <HomeContactMap home={home} />
 
-      <FloatingSocial />
+      
 
 
     </>
