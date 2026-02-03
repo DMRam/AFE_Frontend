@@ -167,7 +167,7 @@ function normalizeCMS(x: CookieConsentCMS | null): CookieConsentCMS {
                 label: x?.categories?.marketing?.label ?? "Marketing",
                 desc:
                     x?.categories?.marketing?.desc ??
-                    "Personnalisation et mesure des campagnes.",
+                    "Personnalisation et mesure des Infolettres.",
             },
         },
         position: (x?.position as any) ?? "bottom-right",

@@ -23,6 +23,7 @@ import { Timestamp } from "firebase/firestore";
 import HomePageManager from "../sections/HomePageManager";
 import { CookieConsentManager } from "../sections/CookieConsentManager";
 import { CampaignsManager } from "../sections/CampaignsManager";
+import { MembersManager } from "../sections/MembersManager";
 
 // ---- CONFIG ----
 const NAV_DOC_ID = "navigation";
@@ -562,7 +563,7 @@ export default function AdminDashboard() {
         return (
           <div className="mx-auto max-w-6xl">
             <AdminPanel
-              title="Campagnes"
+              title="Infolettres & Campagnes"
               description="Créer et envoyer des contenus promotionnels"
               right={<BackButton onClick={() => setActiveSection("overview")} />}
             >
@@ -570,6 +571,24 @@ export default function AdminDashboard() {
             </AdminPanel>
           </div>
         );
+
+      case "members":
+        return (
+          <div className="mx-auto max-w-6xl">
+            <AdminPanel
+              title="Gestionnaire de membres"
+              description="Ajouter, modifier et supprimer les membres du site"
+              right={<BackButton onClick={() => setActiveSection("overview")} />}
+            >
+              <MembersManager />
+            </AdminPanel>
+          </div>
+        );
+
+
+
+
+
 
 
 

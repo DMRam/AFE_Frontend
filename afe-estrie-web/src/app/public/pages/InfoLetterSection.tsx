@@ -1,10 +1,12 @@
-// src/app/public/components/InfoLetterSection.tsx
 import { useState } from "react";
 
 export function InfoLetterSection() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [email, setEmail] = useState("");
+
+    const N8N_INFOLETTER_WEBHOOK_URL = (import.meta as any).env?.VITE_N8N_INFOLETTER_WEBHOOK || "";
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -13,28 +15,26 @@ export function InfoLetterSection() {
         setIsSubmitting(true);
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const res = await fetch(N8N_INFOLETTER_WEBHOOK_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
 
-            // TODO: Replace with actual API call
-            // const response = await fetch('/api/newsletter/subscribe', {
-            //   method: 'POST',
-            //   body: JSON.stringify({ email }),
-            //   headers: { 'Content-Type': 'application/json' },
-            // });
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                throw new Error(`Webhook failed: ${res.status} ${text}`);
+            }
 
-            console.log('Subscribing:', email);
             setIsSuccess(true);
             setEmail("");
-
-            // Reset success message after 5 seconds
             setTimeout(() => setIsSuccess(false), 5000);
         } catch (error) {
-            console.error('Subscription error:', error);
+            console.error("Subscription error:", error);
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }
 
     return (
         <section className="relative overflow-hidden bg-gradient-to-br from-red-50 via-white to-red-50 py-16 md:py-20">
@@ -44,7 +44,7 @@ export function InfoLetterSection() {
 
             <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center">
-                    
+
 
                     <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
                         <span className="block">Abonnez-vous à notre infolettre</span>

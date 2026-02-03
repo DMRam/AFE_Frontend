@@ -16,6 +16,7 @@ import {
     Database,
     LayoutTemplate,
     Cookie,
+    Users,
 } from "lucide-react";
 
 export type AdminSectionId =
@@ -30,6 +31,7 @@ export type AdminSectionId =
     | "activity"
     | "footer"
     | "cookie"
+    | "members";
 
 
 interface UserInfo {
@@ -233,7 +235,6 @@ export function AdminLayout({
     rightActions,
     user = { name: "Administrateur", role: "Admin", email: "admin@example.com" },
     isLoading = false,
-    onSeedEquipePage,
     onLogout,
 }: AdminLayoutProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -293,13 +294,21 @@ export function AdminLayout({
         },
         {
             id: "campaigns",
-            label: "Campagnes",
+            label: "Infolettres & Campagnes",
             icon: ImageIcon,
             badge: "NEW",
             description: "Contenus promotionnels",
             category: "Marketing"
         },
-        
+        {
+            id: "members",
+            label: "Membres",
+            icon: Users,
+            badge: "NEW",
+            description: "Gestion des membres du AFE",
+            category: "Configuration"
+        },
+
         {
             id: "footer",
             label: "Pied de page",
@@ -346,13 +355,7 @@ export function AdminLayout({
         setMobileOpen(false);
     }, [onChange]);
 
-    const handleSeedEquipePage = useCallback(() => {
-        if (onSeedEquipePage) {
-            onSeedEquipePage();
-        } else {
-            alert('Fonction de création de page "Équipe" non implémentée');
-        }
-    }, [onSeedEquipePage]);
+
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900">

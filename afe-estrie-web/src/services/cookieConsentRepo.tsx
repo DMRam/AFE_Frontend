@@ -54,7 +54,7 @@ export async function seedCookieConsentIfMissing() {
       marketing: {
         enabled: false,
         label: "Marketing",
-        desc: "Utilisé pour créer des profils d’utilisateurs et mesurer des campagnes marketing.",
+        desc: "Utilisé pour créer des profils d’utilisateurs et mesurer des Infolettres & marketing.",
       },
     },
 

@@ -10,7 +10,6 @@ import { getHomePage, seedHomePage, saveHomePage } from "../../../services/homeP
 import { AutoDrawFeatures } from "../components/landing/AutoDrawFeatures";
 import { NewsPreview } from "../components/landing/NewsPreview";
 import { HomeContactMap } from "../components/landing/HomeContactCMS";
-import { FloatingSocial } from "../components/FloatingSocial";
 
 export default function Landing() {
   const [home, setHome] = useState<HomePageCMS | null>(null);

@@ -1,4 +1,3 @@
-// src/services/campaignRepo.ts
 import {
     collection,
     doc,
@@ -9,27 +8,30 @@ import {
     query,
     serverTimestamp,
     setDoc,
-    updateDoc,
-    where,
     type Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type CampaignStatus = "draft" | "queued" | "sent" | "failed";
+export type CampaignStatus =
+  | "draft"
+  | "queued"
+  | "sending"
+  | "sent"
+  | "failed";
 
 export type CampaignDoc = {
     id: string;
 
-    // content
-    name: string;              // internal name (admin)
-    subject: string;           // email subject
-    preheader?: string;        // optional
-    title?: string;            // optional heading
-    message: string;           // main body (plain text for v1)
+    name: string;             
+    subject: string;           
+    preheader?: string;        
+    title?: string;           
+    message: string;          
     ctaLabel?: string;
     ctaHref?: string;
-    heroImage?: string;        // URL
+    heroImage?: string;        
     images?: string[];
+    
     // sending
     status: CampaignStatus;
     lastError?: string | null;
@@ -74,13 +76,17 @@ export async function upsertCampaign(id: string, patch: Partial<CampaignDoc>) {
 export async function markCampaignStatus(
     id: string,
     status: CampaignStatus,
-    extra?: { lastError?: string | null; sentAt?: any }
+    extra?: { lastError?: string | null }
 ) {
-    const ref = doc(db, COL, id);
-    await updateDoc(ref, {
-        status,
-        lastError: extra?.lastError ?? null,
-        ...(extra?.sentAt ? { sentAt: extra.sentAt } : {}),
-        updatedAt: serverTimestamp(),
-    });
+    const ref = doc(db, "campaigns", id);
+
+    await setDoc(
+        ref,
+        {
+            status,
+            ...(extra ?? {}),
+            updatedAt: new Date(),
+        },
+        { merge: true } 
+    );
 }

@@ -42,6 +42,7 @@ function StatusBadge({ status }: { status: CampaignDoc["status"] }) {
         queued: { color: "bg-amber-100 text-amber-700 border-amber-200", label: "En attente" },
         sent: { color: "bg-emerald-100 text-emerald-700 border-emerald-200", label: "Envoyée" },
         failed: { color: "bg-red-100 text-red-700 border-red-200", label: "Échec" },
+        sending: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "Envoi..." },
     }[status];
 
     return (
@@ -50,6 +51,34 @@ function StatusBadge({ status }: { status: CampaignDoc["status"] }) {
         </span>
     );
 }
+
+function AutomationBadge({ webhookUrl }: { webhookUrl: string }) {
+    const ok = Boolean(webhookUrl);
+    return (
+        <span
+            className={[
+                "inline-flex items-center gap-2 rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                ok
+                    ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                    : "bg-gray-50 text-gray-500 border-gray-200",
+            ].join(" ")}
+            title={
+                ok
+                    ? "Automatisation connectée (n8n)"
+                    : "Automatisation non configurée. Ajoutez VITE_N8N_CAMPAIGN_WEBHOOK."
+            }
+        >
+            <span
+                className={[
+                    "h-1.5 w-1.5 rounded-full",
+                    ok ? "bg-emerald-500" : "bg-gray-400",
+                ].join(" ")}
+            />
+            {ok ? "Automatisation connectée" : "Automatisation non configurée"}
+        </span>
+    );
+}
+
 
 export function CampaignsManager() {
     const [loading, setLoading] = useState(true);
@@ -137,67 +166,109 @@ export function CampaignsManager() {
     }
 
     async function sendToN8n() {
+        console.log("Sending to n8n...");
         if (!draft) return;
 
-        if (!draft.subject.trim()) {
-            flash("Le sujet est requis");
-            return;
-        }
-        if (!draft.message.trim()) {
-            flash("Le message est requis");
-            return;
-        }
-        if (!N8N_WEBHOOK_URL) {
-            flash("Configuration webhook manquante");
-            return;
-        }
+        if (!draft.subject.trim()) return flash("Le sujet est requis");
+        if (!draft.message.trim()) return flash("Le message est requis");
+        if (!N8N_WEBHOOK_URL) return flash("Configuration webhook manquante");
 
         setSending(true);
+
+        const controller = new AbortController();
+        const t = window.setTimeout(() => controller.abort(), 15000);
+
+        const payload = {
+            campaignId: draft.id,
+            mode: "send" as const,
+            subject: draft.subject,
+            preheader: draft.preheader || "",
+            title: draft.title || "",
+            message: draft.message,
+            ctaLabel: draft.ctaLabel || "",
+            ctaHref: draft.ctaHref || "",
+            images: clampImages(draft.images, 3),
+        };
+
         try {
-            await markCampaignStatus(draft.id, "queued", { lastError: null });
-            await upsertCampaign(draft.id, draft);
+            console.log("Payload:", payload);
 
-            const payload = {
-                campaignId: draft.id,
-                mode: "send",
-                subject: draft.subject,
-                preheader: draft.preheader || "",
-                title: draft.title || "",
-                message: draft.message,
-                ctaLabel: draft.ctaLabel || "",
-                ctaHref: draft.ctaHref || "",
-                images: clampImages(draft.images, 3),
-            };
-
-            const res = await fetch(N8N_WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+            // 1) Ensure the doc exists and has the latest content first (safe upsert)
+            //    This prevents "No document to update" problems.
+            await upsertCampaign(draft.id, {
+                ...draft,
+                lastError: null,
+                // Optional: keep status as-is here; we set queued explicitly next
+                // status: draft.status ?? "draft",
             });
 
-            if (!res.ok) {
-                const text = await res.text().catch(() => "");
-                await markCampaignStatus(draft.id, "failed", { 
-                    lastError: text || `HTTP ${res.status}` 
+            // 2) Mark as queued before triggering n8n (safe merge)
+            await markCampaignStatus(draft.id, "queued", { lastError: null });
+
+            // 3) Call n8n
+            let res: Response;
+            try {
+                res = await fetch(N8N_WEBHOOK_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal,
                 });
+                console.log("[n8n] fetch completed");
+            } catch (err: any) {
+                const msg =
+                    err?.name === "AbortError"
+                        ? "Timeout contacting n8n"
+                        : (err?.message ?? "Network/CORS error contacting n8n");
+
+                await markCampaignStatus(draft.id, "failed", { lastError: msg });
+                flash("Échec de l'envoi (réseau/CORS)");
+                return;
+            }
+
+            // 4) Parse response (best-effort)
+            const text = await res.text().catch(() => "");
+            let data: any = null;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch {
+                // not JSON => keep text
+            }
+
+            console.log("[n8n] status:", res.status);
+            console.log("[n8n] body:", data ?? text);
+
+            // 5) Handle non-2xx
+            if (!res.ok) {
+                const errMsg =
+                    (data && (data.message || JSON.stringify(data))) ||
+                    text ||
+                    `HTTP ${res.status}`;
+
+                await markCampaignStatus(draft.id, "failed", { lastError: errMsg });
                 flash("Échec de l'envoi");
                 return;
             }
 
+            // 6) Success
             await markCampaignStatus(draft.id, "sent", { lastError: null });
             flash("Campagne envoyée ✓");
 
+            // 7) Refresh list + draft from Firestore
             const list = await listCampaigns();
             setItems(list);
+
             const updated = await getCampaign(draft.id);
             if (updated) {
                 setDraft(updated);
                 setInitial(updated);
             }
         } finally {
+            window.clearTimeout(t);
             setSending(false);
         }
     }
+
 
     async function sendTestToN8n() {
         if (!draft) return;
@@ -260,7 +331,7 @@ export function CampaignsManager() {
             <div className="flex items-center justify-center p-12">
                 <div className="flex items-center gap-3 text-gray-600">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Chargement des campagnes...</span>
+                    <span>Chargement des Infolettres...</span>
                 </div>
             </div>
         );
@@ -273,9 +344,9 @@ export function CampaignsManager() {
                 <div className="border-b border-gray-200 p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h2 className="font-semibold text-gray-900">Campagnes</h2>
+                            <h2 className="font-semibold text-gray-900">Infolettres</h2>
                             <p className="text-xs text-gray-500">
-                                {items.length} campagne{items.length !== 1 ? 's' : ''}
+                                {items.length} infolettre{items.length !== 1 ? 's' : ''}
                             </p>
                         </div>
                         <button
@@ -312,11 +383,10 @@ export function CampaignsManager() {
                                         key={campaign.id}
                                         type="button"
                                         onClick={() => setActiveId(campaign.id)}
-                                        className={`w-full rounded-lg p-3 text-left transition-colors ${
-                                            active 
-                                            ? 'border border-blue-200 bg-blue-50' 
+                                        className={`w-full rounded-lg p-3 text-left transition-colors ${active
+                                            ? 'border border-blue-200 bg-blue-50'
                                             : 'border border-transparent hover:bg-gray-50'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0 flex-1">
@@ -356,6 +426,7 @@ export function CampaignsManager() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
+                            <AutomationBadge webhookUrl={N8N_WEBHOOK_URL} />
                             {toast && (
                                 <div className="rounded-lg bg-emerald-50 px-3 py-1.5 text-sm text-emerald-700">
                                     {toast}
