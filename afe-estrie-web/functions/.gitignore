@@ -11,3 +11,5 @@ node_modules/
 
 functions/.runtimeconfig.json
 # Firebase cache files
+
+.env
