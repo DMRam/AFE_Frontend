@@ -28,6 +28,10 @@ export function MembersManager() {
     const [modalMode, setModalMode] = useState<"create" | "edit">("create");
     const [editing, setEditing] = useState<Member | null>(null);
 
+    // Details modal
+    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [detailsMember, setDetailsMember] = useState<Member | null>(null);
+
     // Filters
     const [search, setSearch] = useState("");
     const [city, setCity] = useState<string>("tous");
@@ -53,7 +57,10 @@ export function MembersManager() {
             setMembers(rows);
         } catch (e: any) {
             console.error(e);
-            setSendResult({ ok: false, message: `Échec du chargement des membres : ${e?.message || String(e)}` });
+            setSendResult({
+                ok: false,
+                message: `Échec du chargement des membres : ${e?.message || String(e)}`,
+            });
         } finally {
             setIsLoading(false);
         }
@@ -77,17 +84,22 @@ export function MembersManager() {
         setModalOpen(true);
     }
 
+    function openDetails(m: Member) {
+        setDetailsMember(m);
+        setDetailsOpen(true);
+    }
+
     async function handleSubmit(input: MemberInput) {
         try {
             if (modalMode === "create") {
                 const created = await createMember(input);
                 setMembers((prev) => [created, ...prev]);
-                // optional: refresh to get serverTimestamp ordering
-                await refreshMembers();
+                await refreshMembers(); // important for serverTimestamp ordering + nested fields
             } else if (modalMode === "edit" && editing) {
                 await updateMember(editing.id, input);
-                setMembers((prev) => prev.map((x) => (x.id === editing.id ? { ...x, ...input } : x)));
+                await refreshMembers(); // ensures nested fields remain correct
             }
+            setModalOpen(false);
         } catch (e: any) {
             console.error(e);
             alert(`Échec de l'enregistrement : ${e?.message || String(e)}`);
@@ -106,6 +118,11 @@ export function MembersManager() {
                 next.delete(m.id);
                 return next;
             });
+
+            if (detailsMember?.id === m.id) {
+                setDetailsOpen(false);
+                setDetailsMember(null);
+            }
         } catch (e: any) {
             console.error(e);
             alert(`Échec de la suppression : ${e?.message || String(e)}`);
@@ -121,7 +138,7 @@ export function MembersManager() {
         return members.filter((m) => {
             if (city !== "tous" && m.city !== city) return false;
             if (status !== "tous" && m.status !== status) return false;
-            if (m.age < minAge || m.age > maxAge) return false;
+            if (m.age != null && (m.age < minAge || m.age > maxAge)) return false;
             if (tag !== "tous" && !m.tags.includes(tag)) return false;
 
             if (!q) return true;
@@ -170,7 +187,6 @@ export function MembersManager() {
 
     // ---- Preview summary for n8n ----
     const sendPreview = useMemo(() => {
-        // show only first 12 to avoid huge UI
         const top = selected.slice(0, 12).map((m) => ({
             fullName: m.fullName,
             email: m.email,
@@ -204,7 +220,7 @@ export function MembersManager() {
             filters: { search, city, status, minAge, maxAge, tag },
             summary: {
                 count: selected.length,
-                sample: sendPreview.top, // small sample so n8n logs aren't huge
+                sample: sendPreview.top,
             },
             members: selected.map((m) => ({
                 id: m.id,
@@ -214,6 +230,12 @@ export function MembersManager() {
                 age: m.age,
                 tags: m.tags,
                 status: m.status,
+
+                // useful but still “safe-ish” fields:
+                planName: m.membership?.planName ?? "",
+                paymentStatus: m.membership?.paymentStatus ?? "",
+                phone: m.profile?.phone ?? "",
+                preferredLanguage: m.profile?.preferredLanguage ?? "",
             })),
         };
 
@@ -229,7 +251,8 @@ export function MembersManager() {
                 const text = await res.text().catch(() => "");
                 setSendResult({
                     ok: false,
-                    message: `L'appel d'automatisation a échoué (${res.status}). ${text ? "Réponse : " + text.slice(0, 180) : ""}`,
+                    message: `L'appel d'automatisation a échoué (${res.status}). ${text ? "Réponse : " + text.slice(0, 180) : ""
+                        }`,
                 });
                 return;
             }
@@ -249,20 +272,16 @@ export function MembersManager() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-xl font-semibold sm:text-2xl">Gestionnaire des Membres</h2>
-                        <p className="text-sm text-gray-600">Filtrez les membres et envoyez la liste sélectionnée à votre flux de travail d'automatisation (n8n).</p>
+                        <p className="text-sm text-gray-600">
+                            Filtrez les membres et envoyez la liste sélectionnée à votre flux de travail d&apos;automatisation (n8n).
+                        </p>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        <button
-                            onClick={openCreate}
-                            className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-                        >
+                        <button onClick={openCreate} className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
                             + Nouveau membre
                         </button>
-                        <button
-                            onClick={refreshMembers}
-                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-                        >
+                        <button onClick={refreshMembers} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
                             Actualiser
                         </button>
                     </div>
@@ -271,19 +290,6 @@ export function MembersManager() {
 
             {/* Automation */}
             <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                {/* <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-gray-700">URL du Webhook d'Automatisation</label>
-                    <input
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                        value={webhookUrl}
-                        onChange={(e) => setWebhookUrl(e.target.value)}
-                        placeholder="https://automation.ulogicit.com/webhook/..."
-                    />
-                    <p className="text-xs text-gray-500">
-                        Astuce : placez-la dans <code>.env</code> comme <code>VITE_MEMBERS_WEBHOOK_URL</code>.
-                    </p>
-                </div> */}
-
                 {/* Preview summary */}
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -306,9 +312,7 @@ export function MembersManager() {
                                     <span className="text-gray-600 break-all sm:break-normal">{x.email}</span>
                                 </li>
                             ))}
-                            {sendPreview.hasMore && (
-                                <li className="text-gray-500">…et {sendPreview.count - sendPreview.top.length} de plus</li>
-                            )}
+                            {sendPreview.hasMore && <li className="text-gray-500">…et {sendPreview.count - sendPreview.top.length} de plus</li>}
                         </ul>
                     )}
                 </div>
@@ -322,18 +326,11 @@ export function MembersManager() {
                         {isSending ? "Envoi en cours..." : `Envoyer sélection (${selected.length})`}
                     </button>
 
-                    <button
-                        onClick={clearSelection}
-                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-                    >
+                    <button onClick={clearSelection} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
                         Effacer la sélection
                     </button>
 
-                    {sendResult && (
-                        <span className={`text-sm ${sendResult.ok ? "text-green-700" : "text-red-700"}`}>
-                            {sendResult.message}
-                        </span>
-                    )}
+                    {sendResult && <span className={`text-sm ${sendResult.ok ? "text-green-700" : "text-red-700"}`}>{sendResult.message}</span>}
                 </div>
             </section>
 
@@ -418,16 +415,10 @@ export function MembersManager() {
                     <div className="flex flex-col gap-2 md:col-span-2 lg:col-span-1 xl:col-span-2">
                         <label className="text-sm font-medium text-gray-700">Sélection des filtres</label>
                         <div className="flex gap-2">
-                            <button
-                                onClick={selectAllFiltered}
-                                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50"
-                            >
+                            <button onClick={selectAllFiltered} className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50">
                                 Tout sélectionner (filtrés)
                             </button>
-                            <button
-                                onClick={unselectAllFiltered}
-                                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50"
-                            >
+                            <button onClick={unselectAllFiltered} className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50">
                                 Tout désélectionner (filtrés)
                             </button>
                         </div>
@@ -449,7 +440,7 @@ export function MembersManager() {
                     <div className="text-sm text-gray-600">Aucun membre ne correspond aux filtres.</div>
                 ) : (
                     <div className="overflow-x-auto -mx-2 sm:-mx-0">
-                        <table className="w-full min-w-[800px] text-left text-sm">
+                        <table className="w-full min-w-[1100px] text-left text-sm">
                             <thead className="border-b border-gray-200 text-gray-700">
                                 <tr>
                                     <th className="py-2 pr-3">
@@ -461,27 +452,27 @@ export function MembersManager() {
                                     <th className="py-2 pr-3">Âge</th>
                                     <th className="py-2 pr-3">Statut</th>
                                     <th className="py-2 pr-3">Étiquettes</th>
+                                    <th className="py-2 pr-3">Plan</th>
+                                    <th className="py-2 pr-3">Téléphone</th>
                                     <th className="py-2 pr-3">Créé le</th>
                                     <th className="py-2 pr-3">Actions</th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 {filtered.map((m) => {
                                     const checked = selectedIds.has(m.id);
                                     return (
                                         <tr key={m.id} className="border-b border-gray-100">
                                             <td className="py-2 pr-3">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={checked}
-                                                    onChange={() => toggleOne(m.id)}
-                                                    className="h-4 w-4"
-                                                />
+                                                <input type="checkbox" checked={checked} onChange={() => toggleOne(m.id)} className="h-4 w-4" />
                                             </td>
+
                                             <td className="py-2 pr-3 font-medium">{m.fullName}</td>
                                             <td className="py-2 pr-3 text-gray-700 break-all">{m.email}</td>
                                             <td className="py-2 pr-3">{m.city}</td>
-                                            <td className="py-2 pr-3">{m.age}</td>
+                                            <td className="py-2 pr-3">{m.age ?? "—"}</td>
+
                                             <td className="py-2 pr-3">
                                                 <span
                                                     className={`rounded-full px-2 py-0.5 text-xs ${m.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-700"
@@ -490,9 +481,10 @@ export function MembersManager() {
                                                     {m.status === "active" ? "Actif" : "Inactif"}
                                                 </span>
                                             </td>
+
                                             <td className="py-2 pr-3">
                                                 <div className="flex flex-wrap gap-1">
-                                                    {m.tags.length ? (
+                                                    {m.tags?.length ? (
                                                         m.tags.map((t) => (
                                                             <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                                                                 {t}
@@ -503,9 +495,31 @@ export function MembersManager() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="py-2 pr-3 text-gray-600">{m.createdAt}</td>
+
+                                            <td className="py-2 pr-3">
+                                                {m.membership?.planName ? (
+                                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-800">
+                                                        {m.membership.planName}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">—</span>
+                                                )}
+                                            </td>
+
+                                            <td className="py-2 pr-3 text-gray-700">
+                                                {m.profile?.phone ? <span className="break-all">{m.profile.phone}</span> : <span className="text-xs text-gray-400">—</span>}
+                                            </td>
+
+                                            <td className="py-2 pr-3 text-gray-600">{m.createdAt || "—"}</td>
+
                                             <td className="py-2 pr-3">
                                                 <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        onClick={() => openDetails(m)}
+                                                        className="rounded-lg border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50"
+                                                    >
+                                                        Détails
+                                                    </button>
                                                     <button
                                                         onClick={() => openEdit(m)}
                                                         className="rounded-lg border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50"
@@ -529,9 +543,38 @@ export function MembersManager() {
                 )}
             </section>
 
+            {/* Details Modal */}
+            {detailsOpen && detailsMember && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="w-full max-w-3xl rounded-2xl bg-white shadow-lg">
+                        <div className="flex items-center justify-between border-b p-4">
+                            <div>
+                                <div className="text-lg font-semibold">{detailsMember.fullName}</div>
+                                <div className="text-sm text-gray-600 break-all">{detailsMember.email}</div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setDetailsOpen(false);
+                                    setDetailsMember(null);
+                                }}
+                                className="rounded-lg border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50"
+                            >
+                                Fermer
+                            </button>
+                        </div>
+
+                        <div className="max-h-[70vh] overflow-auto p-4">
+                            <pre className="whitespace-pre-wrap break-words rounded-xl bg-gray-50 p-3 text-xs text-gray-800">
+                                {JSON.stringify(detailsMember, null, 2)}
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Safety note */}
             <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                <b>Note de confidentialité :</b> gardez le contenu minimal (courriel + champs de segmentation). Évitez d'envoyer des données de santé sensibles.
+                <b>Note de confidentialité :</b> gardez le contenu minimal (courriel + champs de segmentation). Évitez d&apos;envoyer des données de santé sensibles.
             </section>
 
             <MemberFormModal

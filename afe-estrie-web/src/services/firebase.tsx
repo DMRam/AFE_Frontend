@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -13,6 +14,12 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+export const functions = getFunctions(app);
+
+if (import.meta.env.DEV) {
+  connectFunctionsEmulator(functions, "localhost", 5001);
+}
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
