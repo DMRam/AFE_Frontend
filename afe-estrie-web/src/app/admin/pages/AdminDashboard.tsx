@@ -22,8 +22,8 @@ import { db } from "../../../services/firebase";
 import { Timestamp } from "firebase/firestore";
 import HomePageManager from "../sections/HomePageManager";
 import { CookieConsentManager } from "../sections/CookieConsentManager";
-import { CampaignsManager } from "../sections/CampaignsManager";
-import { MembersManager } from "../sections/MembersManager";
+// import { CampaignsManager } from "../sections/CampaignsManager";
+import { MembersManager } from "../sections/members/MembersManager";
 
 // ---- CONFIG ----
 const NAV_DOC_ID = "navigation";
@@ -559,18 +559,18 @@ export default function AdminDashboard() {
           </div>
         );
 
-      case "campaigns":
-        return (
-          <div className="mx-auto max-w-6xl">
-            <AdminPanel
-              title="Infolettres & Campagnes"
-              description="Créer et envoyer des contenus promotionnels"
-              right={<BackButton onClick={() => setActiveSection("overview")} />}
-            >
-              <CampaignsManager />
-            </AdminPanel>
-          </div>
-        );
+      // case "campaigns":
+      //   return (
+      //     <div className="mx-auto max-w-6xl">
+      //       <AdminPanel
+      //         title="Infolettres & Campagnes"
+      //         description="Créer et envoyer des contenus promotionnels"
+      //         right={<BackButton onClick={() => setActiveSection("overview")} />}
+      //       >
+      //         <CampaignsManager />
+      //       </AdminPanel>
+      //     </div>
+      //   );
 
       case "members":
         return (

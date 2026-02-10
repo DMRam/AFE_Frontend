@@ -12,7 +12,7 @@ import {
     LogOut,
     ChevronDown,
     Bell,
-    Image as ImageIcon,
+    // Image as ImageIcon,
     Database,
     LayoutTemplate,
     Cookie,
@@ -27,7 +27,7 @@ export type AdminSectionId =
     | "events"
     | "footer"
     | "settings"
-    | "campaigns"
+    // | "campaigns"
     | "activity"
     | "footer"
     | "cookie"
@@ -292,21 +292,21 @@ export function AdminLayout({
             description: "Menus et structure",
             category: "Contenu"
         },
-        {
-            id: "campaigns",
-            label: "Infolettres & Campagnes",
-            icon: ImageIcon,
-            badge: "NEW",
-            description: "Contenus promotionnels",
-            category: "Marketing"
-        },
+        // {
+        //     id: "campaigns",
+        //     label: "Infolettres & Campagnes",
+        //     icon: ImageIcon,
+        //     badge: "NEW",
+        //     description: "Contenus promotionnels",
+        //     category: "Marketing"
+        // },
         {
             id: "members",
             label: "Membres",
             icon: Users,
             badge: "NEW",
             description: "Gestion des membres du AFE",
-            category: "Configuration"
+            category: "Marketing"
         },
 
         {

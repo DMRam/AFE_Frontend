@@ -91,7 +91,7 @@ export function CampaignsManager() {
     const [toast, setToast] = useState<string | null>(null);
 
     const N8N_WEBHOOK_URL = (import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK || "";
-    const N8N_WEBHOOK_URL_TEST = (import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK_TEST || "";
+    // const N8N_WEBHOOK_URL = (import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK_TEST || "";
 
     function parseEmails(input: string): string[] {
         return (input || "")
@@ -207,7 +207,7 @@ export function CampaignsManager() {
             // 3) Call n8n
             let res: Response;
             try {
-                res = await fetch(N8N_WEBHOOK_URL_TEST, {
+                res = await fetch(N8N_WEBHOOK_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),

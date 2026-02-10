@@ -18,12 +18,12 @@ export function MemberModal({ open, onClose }: { open: boolean; onClose: () => v
 
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [form, setForm] = useState<MemberClientForm>(DEFAULT_FORM);
-    const [formTouched, setFormTouched] = useState(false);
+    const [_formTouched, setFormTouched] = useState(false);
 
     const [isPaying, setIsPaying] = useState(false);
     const [payError, setPayError] = useState<string | null>(null);
 
-    const { ok: formOk, errors: formErrors, normalized: normalizedForm } = useMemo(() => validateForm(form), [form]);
+    const { ok: formOk, errors: _formErrors, normalized: normalizedForm } = useMemo(() => validateForm(form), [form]);
 
     async function startCheckout() {
         if (!selectedPlan) return;
