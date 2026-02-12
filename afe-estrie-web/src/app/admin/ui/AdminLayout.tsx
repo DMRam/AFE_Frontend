@@ -12,9 +12,7 @@ import {
     LogOut,
     ChevronDown,
     Bell,
-    // Image as ImageIcon,
     Database,
-    LayoutTemplate,
     Cookie,
     Users,
 } from "lucide-react";
@@ -29,7 +27,6 @@ export type AdminSectionId =
     | "settings"
     // | "campaigns"
     | "activity"
-    | "footer"
     | "cookie"
     | "members";
 
@@ -304,7 +301,7 @@ export function AdminLayout({
             id: "members",
             label: "Membres",
             icon: Users,
-            badge: "NEW",
+            badge: "",
             description: "Gestion des membres du AFE",
             category: "Marketing"
         },
@@ -315,7 +312,6 @@ export function AdminLayout({
             icon: PanelBottom,
             badge: "",
             description: "Configuration du footer",
-            category: "Configuration"
         },
         {
             id: "settings",
@@ -326,15 +322,10 @@ export function AdminLayout({
             category: "Configuration"
         },
         {
-            id: "footer",
-            label: "Footer",
-            icon: LayoutTemplate,
-        },
-        {
             id: "cookie",
             label: "Cookies",
             icon: Cookie,
-            desc: "Consentement et liens",
+            description: "Consentement et liens",
         }
     ], []);
 
@@ -394,10 +385,6 @@ export function AdminLayout({
                         </div>
                     </div>
 
-                    {/* Search */}
-                    <div className="px-4 py-3 border-b border-gray-200">
-                        <SearchInput placeholder="Rechercher…" />
-                    </div>
 
                     {/* Navigation */}
                     <nav className="flex-1 overflow-y-auto py-3">
@@ -538,6 +525,7 @@ export function AdminLayout({
                                         user={user}
                                         isOpen={userMenuOpen}
                                         onClose={() => setUserMenuOpen(false)}
+                                        onSettings={() => onChange("settings")}
                                         onLogout={onLogout}
                                     />
                                 </div>

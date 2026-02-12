@@ -22,8 +22,10 @@ export function AutomationSection({
     onSendToAutomation,
     onClearSelection,
 }: AutomationSectionProps) {
-    const ENV_WEBHOOK = ((import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK_TEST as string | undefined) ?? "";
-        // ((import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK as string | undefined) ?? "";
+    // const ENV_WEBHOOK = ((import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK_TEST as string | undefined) ?? "";
+    const ENV_WEBHOOK = ((import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK as string | undefined) ?? "";
+
+    // ((import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK as string | undefined) ?? "";
 
     const [webhookUrl, setWebhookUrl] = useState(initialWebhookUrl || "");
 

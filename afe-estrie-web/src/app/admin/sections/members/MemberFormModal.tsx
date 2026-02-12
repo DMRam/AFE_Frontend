@@ -232,7 +232,7 @@ export function MemberFormModal({ open, mode, initial, onClose, onSubmit }: Prop
                                         className={`w-full rounded-lg border px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 ${errors.city ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500/20 focus:border-blue-500'}`}
                                         value={formData.city}
                                         onChange={(e) => handleChange("city", e.target.value)}
-                                        placeholder="Paris"
+                                        placeholder="Sherbrooke"
                                     />
                                     {errors.city && (
                                         <div className="flex items-center gap-1 text-sm text-red-600">

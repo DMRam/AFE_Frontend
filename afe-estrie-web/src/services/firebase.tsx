@@ -15,7 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const functions = getFunctions(app);
+export const functions = getFunctions(app, "us-central1");
 
 if (import.meta.env.DEV) {
   connectFunctionsEmulator(functions, "localhost", 5001);

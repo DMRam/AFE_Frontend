@@ -30,7 +30,7 @@ export function WebhookConfig({
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
     const N8N_WEBHOOK_URL = (import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK || "";
-    // const N8N_WEBHOOK_URL_TEST = (import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK_TEST || "";
+    // const N8N_WEBHOOK_URL = (import.meta as any).env?.VITE_N8N_CAMPAIGN_WEBHOOK_TEST || "";
 
     webhookUrl = webhookUrl || N8N_WEBHOOK_URL || "";
 
