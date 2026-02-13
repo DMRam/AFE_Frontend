@@ -14,11 +14,10 @@ import { signOut } from "firebase/auth";
 import { auth } from "../../../services/firebase";
 
 
+
 import {
   collection,
-  doc,
   getCountFromServer,
-  getDoc,
   limit,
   onSnapshot,
   orderBy,
@@ -455,6 +454,7 @@ export default function AdminDashboard() {
   const { loading: authLoading, user } = useAdminUser();
 
 
+
   // Fetch friendly metrics (no jargon)
   useEffect(() => {
     let isMounted = true;
@@ -559,7 +559,13 @@ export default function AdminDashboard() {
 
     switch (activeSection) {
       case "overview":
-        return <OverviewContent metrics={metrics} recent={recentActivity} onGo={setActiveSection} />;
+        return (
+          <div className="space-y-4">
+
+            <OverviewContent metrics={metrics} recent={recentActivity} onGo={setActiveSection} />
+          </div>
+        );
+
 
       case "homepage":
         return (

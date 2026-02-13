@@ -22,9 +22,13 @@ setGlobalOptions({
  */
 export { sendMemberToN8N } from "./sendMemberToN8N";
 
-export { bootstrapAdmin } from "./bootstrapAdmin";
-
-export { createDashboardUser } from "./adminUsers";
+// Admin users (callables)
+export {
+  createDashboardUser,
+  listDashboardUsers,
+  setDashboardUserDisabled,
+  deleteDashboardUser,
+} from "./adminUsers";
 
 
 /**

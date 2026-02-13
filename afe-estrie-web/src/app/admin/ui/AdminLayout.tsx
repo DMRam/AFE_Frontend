@@ -6,7 +6,7 @@ import {
     Home,
     PanelBottom,
     Settings,
-    Search,
+    // Search,
     Menu,
     User,
     LogOut,
@@ -63,25 +63,25 @@ interface AdminLayoutProps {
     onLogout?: () => void;
 }
 
-function SearchInput({
-    placeholder,
-    className = ""
-}: {
-    placeholder: string;
-    className?: string
-}) {
-    return (
-        <div className={`relative ${className}`}>
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <input
-                placeholder={placeholder}
-                className="w-full border border-gray-200 bg-white/70 pl-9 pr-3 py-2 text-sm rounded-lg focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none backdrop-blur-sm transition-all"
-                disabled
-                title="Recherche à venir"
-            />
-        </div>
-    );
-}
+// function SearchInput({
+//     placeholder,
+//     className = ""
+// }: {
+//     placeholder: string;
+//     className?: string
+// }) {
+//     return (
+//         <div className={`relative ${className}`}>
+//             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+//             <input
+//                 placeholder={placeholder}
+//                 className="w-full border border-gray-200 bg-white/70 pl-9 pr-3 py-2 text-sm rounded-lg focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none backdrop-blur-sm transition-all"
+//                 disabled
+//                 title="Recherche à venir"
+//             />
+//         </div>
+//     );
+// }
 
 function UserAvatar({ user }: { user: UserInfo }) {
     if (user.avatarUrl) {
