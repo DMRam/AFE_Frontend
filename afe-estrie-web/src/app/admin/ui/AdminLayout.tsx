@@ -289,14 +289,7 @@ export function AdminLayout({
             description: "Menus et structure",
             category: "Contenu"
         },
-        // {
-        //     id: "campaigns",
-        //     label: "Infolettres & Campagnes",
-        //     icon: ImageIcon,
-        //     badge: "NEW",
-        //     description: "Contenus promotionnels",
-        //     category: "Marketing"
-        // },
+        
         {
             id: "members",
             label: "Membres",
@@ -317,7 +310,7 @@ export function AdminLayout({
             id: "settings",
             label: "Paramètres",
             icon: Settings,
-            badge: "TODO",
+            badge: "",
             description: "Système et sécurité",
             category: "Configuration"
         },
@@ -407,36 +400,6 @@ export function AdminLayout({
                         ))}
                     </nav>
 
-                    {/* Sidebar footer */}
-                    <div className="border-t border-gray-200 px-4 py-3">
-                        <div className="mb-3 grid grid-cols-2 gap-2">
-                            {/* <button
-                                type="button"
-                                onClick={handlePreview}
-                                className="inline-flex items-center justify-center gap-1.5 border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-gray-50 rounded transition-colors"
-                            >
-                                <Eye className="h-3 w-3" />
-                                Aperçu
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handlePublish}
-                                className="inline-flex items-center justify-center gap-1.5 bg-blue-600 text-white px-2.5 py-1.5 text-xs font-medium hover:bg-blue-700 rounded transition-colors"
-                            >
-                                <UploadCloud className="h-3 w-3" />
-                                Publier
-                            </button> */}
-                        </div>
-
-                        {/* <button
-                            onClick={handleSeedEquipePage}
-                            className="w-full text-left text-xs text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-50 rounded transition-colors flex items-center gap-1.5"
-                        >
-                            <Key className="h-3 w-3" />
-                            Page "Équipe"
-                        </button> */}
-                    </div>
                 </aside>
 
                 {/* Main content area */}
@@ -480,24 +443,7 @@ export function AdminLayout({
                                     <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-white"></span>
                                 </button>
 
-                                {/* Preview */}
-                                {/* <button
-                                    onClick={handlePreview}
-                                    className="hidden sm:inline-flex items-center gap-2 border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-lg transition-colors"
-                                >
-                                    <Eye className="h-4 w-4" />
-                                    Aperçu
-                                </button> */}
-
-                                {/* Publish */}
-                                {/* <button
-                                    onClick={handlePublish}
-                                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-blue-700 rounded-lg transition-colors"
-                                >
-                                    <UploadCloud className="h-4 w-4" />
-                                    Publier
-                                </button> */}
-
+                    
                                 {/* User menu */}
                                 <div className="relative">
                                     <button
@@ -544,9 +490,11 @@ export function AdminLayout({
                                     </div>
                                 </div>
                             ) : (
-                                <div className="max-w-full">
-                                    {children}
-                                </div>
+                                <div className="w-full">
+  {children}
+</div>
+
+
                             )}
                         </div>
                     </main>

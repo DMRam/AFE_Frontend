@@ -3,7 +3,6 @@ import { AdminLayout, type AdminSectionId } from "../ui/AdminLayout";
 import { AdminPanel, AdminStat } from "../ui/AdminPanel";
 
 import { NavManager } from "../sections/NavManager";
-import { PagesManager } from "../sections/PagesManager";
 import { FooterManager } from "../sections/FooterManager";
 import { CookieConsentManager } from "../sections/CookieConsentManager";
 import { MembersManager } from "../sections/members/MembersManager";
@@ -39,6 +38,7 @@ import {
 } from "lucide-react";
 import { SettingsManager } from "../sections/settings/SettingsManager";
 import HomePageManager from "../sections/homepage/HomePageManager";
+import PagesManager from "../sections/pages/PagesManager";
 
 // ---- TYPES ----
 interface Metrics {
@@ -542,7 +542,7 @@ export default function AdminDashboard() {
   const renderContent = () => {
     if (error) {
       return (
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-7xl">
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
             <div className="text-red-700 font-semibold mb-2">Oups…</div>
             <p className="text-red-600 text-sm">{error}</p>
@@ -569,7 +569,7 @@ export default function AdminDashboard() {
 
       case "homepage":
         return (
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Page d’accueil"
               description="Modifier les blocs visibles sur la page principale"
@@ -582,7 +582,7 @@ export default function AdminDashboard() {
 
       case "pages":
         return (
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Pages du site"
               description="Créer et modifier les pages d’information"
@@ -595,7 +595,7 @@ export default function AdminDashboard() {
 
       case "members":
         return (
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Membres"
               description="Gérer les inscriptions et informations des membres"
@@ -606,10 +606,9 @@ export default function AdminDashboard() {
           </div>
         );
 
-      // Keep advanced sections but make them feel “administration”, not dev.
       case "navigation":
         return (
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Menu du site"
               description="Modifier le menu principal et les sous-menus"
@@ -622,7 +621,7 @@ export default function AdminDashboard() {
 
       case "footer":
         return (
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Pied de page"
               description="Coordonnées, liens utiles, partenaires"
@@ -635,7 +634,7 @@ export default function AdminDashboard() {
 
       case "cookie":
         return (
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Cookies"
               description="Texte de consentement et liens de politiques"
@@ -648,7 +647,7 @@ export default function AdminDashboard() {
 
       case "settings":
         return (
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Paramètres"
               description="Profil et accès équipe"
@@ -662,7 +661,7 @@ export default function AdminDashboard() {
 
       default:
         return (
-          <div className="mx-auto max-w-4xl">
+          <div className="mx-auto max-w-8xl">
             <AdminPanel
               title="Section bientôt disponible"
               description="Cette fonctionnalité sera ajoutée prochainement"
@@ -694,7 +693,7 @@ export default function AdminDashboard() {
         name: user?.name || "Utilisateur",
         email: user?.email,
         avatarUrl: user?.avatarUrl,
-        role: user?.role, // <- important
+        role: user?.role,
       }}
       onLogout={() => signOut(auth)}
     >

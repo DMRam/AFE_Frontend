@@ -76,7 +76,7 @@ function buildPageDoc(params: {
                 id: uid("hero"),
                 enabled: true,
                 title: params.title,
-                subtitle: "Add your subtitle here...",
+                subtitle: "Ajoutez un sous-titre ici…",
                 backgroundImage: "/images/placeholder.jpg",
                 align: "center",
                 textColor: "light",
@@ -85,14 +85,14 @@ function buildPageDoc(params: {
                 type: "richText",
                 id: uid("rt"),
                 enabled: true,
-                content: "Write your content here...",
+                content: "Écrivez votre contenu ici…",
             },
             {
                 type: "split",
                 id: uid("split"),
                 enabled: true,
-                title: "Section Title",
-                content: "Add your text here...",
+                title: "Titre de section",
+                content: "Ajoutez votre texte ici…",
                 imageUrl: "/images/placeholder.jpg",
                 imageAlt: "",
                 imageSide: "right",
@@ -173,8 +173,8 @@ export function NewPageButton({
     async function submit() {
         setErr("");
 
-        if (!pageId) return setErr("Page ID is required.");
-        if (!title.trim()) return setErr("Title is required.");
+        if (!pageId) return setErr("Le chemin de la page est requis.");
+        if (!title.trim()) return setErr("Le titre est requis.");
 
         setSubmitting(true);
         try {
@@ -194,7 +194,7 @@ export function NewPageButton({
 
             close();
         } catch (e: any) {
-            setErr(e?.message ?? "Failed to create page.");
+            setErr(e?.message ?? "Impossible de créer la page.");
             setSubmitting(false);
         }
     }
@@ -212,15 +212,11 @@ export function NewPageButton({
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                New Page
+                Nouvelle page
             </button>
 
             {open ? (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    role="dialog"
-                    aria-modal="true"
-                >
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
                     {/* Backdrop */}
                     <div
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -234,15 +230,15 @@ export function NewPageButton({
                         <div className="border-b border-gray-100 p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-semibold text-gray-900">Create New Page</h2>
+                                    <h2 className="text-xl font-semibold text-gray-900">Créer une page</h2>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Set up your page URL, title, and content
+                                        Définissez l’adresse, le titre et un contenu de départ
                                     </p>
                                 </div>
                                 <button
                                     onClick={close}
                                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    aria-label="Close"
+                                    aria-label="Fermer"
                                 >
                                     <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -259,7 +255,12 @@ export function NewPageButton({
                                     <div className="flex items-start gap-3">
                                         <div className="flex-shrink-0">
                                             <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                />
                                             </svg>
                                         </div>
                                         <div className="text-sm text-red-700">{err}</div>
@@ -270,15 +271,15 @@ export function NewPageButton({
                             {/* URL Section */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-                                    URL Structure
+                                    Adresse de la page
                                 </h3>
 
                                 <div className="space-y-3">
                                     <label className="block">
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-sm font-medium text-gray-700">Page Path</span>
+                                            <span className="text-sm font-medium text-gray-700">Chemin</span>
                                             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                Will be prefixed with <code className="font-mono">/p/</code>
+                                                Préfixe automatique <code className="font-mono">/p/</code>
                                             </span>
                                         </div>
                                         <div className="relative">
@@ -290,7 +291,7 @@ export function NewPageButton({
                                                 className="w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                                 value={pageIdRaw}
                                                 onChange={(e) => setPageIdRaw(e.target.value)}
-                                                placeholder="about/diagnostic"
+                                                placeholder="a-propos/diagnostic"
                                                 autoFocus
                                             />
                                         </div>
@@ -299,9 +300,15 @@ export function NewPageButton({
                                     <div className="text-xs text-gray-500">
                                         <p className="flex items-center gap-1.5">
                                             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                />
                                             </svg>
-                                            Use slashes to organize pages into folders. Example: <code className="font-mono mx-1 px-1.5 py-0.5 bg-gray-100 rounded">services/consulting</code>
+                                            Utilisez des « / » pour organiser les pages. Exemple :
+                                            <code className="font-mono mx-1 px-1.5 py-0.5 bg-gray-100 rounded">services/consultation</code>
                                         </p>
                                     </div>
                                 </div>
@@ -310,21 +317,28 @@ export function NewPageButton({
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                                     <div className="flex items-center gap-2 mb-2">
                                         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                                            />
                                         </svg>
-                                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Preview</span>
+                                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                            Aperçu
+                                        </span>
                                     </div>
                                     <div className="space-y-2">
                                         <div>
-                                            <div className="text-xs text-gray-500 mb-1">Public URL</div>
+                                            <div className="text-xs text-gray-500 mb-1">Adresse publique</div>
                                             <div className="font-mono text-sm text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 truncate">
                                                 {urlPreview}
                                             </div>
                                         </div>
                                         <div>
-                                            <div className="text-xs text-gray-500 mb-1">Internal ID</div>
+                                            <div className="text-xs text-gray-500 mb-1">Identifiant interne</div>
                                             <div className="font-mono text-sm text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 truncate">
-                                                {derivedDocId || "Will be generated"}
+                                                {derivedDocId || "Sera généré"}
                                             </div>
                                         </div>
                                     </div>
@@ -334,13 +348,13 @@ export function NewPageButton({
                             {/* Content Section */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-                                    Content
+                                    Contenu
                                 </h3>
 
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <label className="block">
-                                            <span className="text-sm font-medium text-gray-700">Page Title</span>
+                                            <span className="text-sm font-medium text-gray-700">Titre de la page</span>
                                             <input
                                                 type="text"
                                                 className="w-full mt-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
@@ -349,28 +363,28 @@ export function NewPageButton({
                                                     setTitle(e.target.value);
                                                     if (!seoTitle.trim()) setSeoTitle(e.target.value);
                                                 }}
-                                                placeholder="About Our Diagnostic Services"
+                                                placeholder="À propos du diagnostic"
                                             />
                                         </label>
                                         <p className="text-xs text-gray-500">
-                                            This will be displayed in the page header and navigation
+                                            Ce titre peut apparaître sur la page et dans la navigation.
                                         </p>
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block">
-                                            <span className="text-sm font-medium text-gray-700">Template</span>
+                                            <span className="text-sm font-medium text-gray-700">Modèle</span>
                                             <select
                                                 className="w-full mt-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none"
                                                 value={seed}
                                                 onChange={(e) => setSeed(e.target.value as SeedMode)}
                                             >
-                                                <option value="standard">Standard Layout (Recommended)</option>
-                                                <option value="empty">Blank Page</option>
+                                                <option value="standard">Mise en page standard (recommandée)</option>
+                                                <option value="empty">Page vide</option>
                                             </select>
                                         </label>
                                         <p className="text-xs text-gray-500">
-                                            Choose a starting template. You can customize everything later.
+                                            Choisissez un modèle de départ. Vous pourrez tout modifier ensuite.
                                         </p>
                                     </div>
                                 </div>
@@ -382,9 +396,13 @@ export function NewPageButton({
                                         onClick={() => setShowAdvanced((v) => !v)}
                                         className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                                     >
-                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${showAdvanced ? 'bg-gray-900 border-gray-900' : 'border-gray-300'}`}>
+                                        <div
+                                            className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${showAdvanced ? "bg-gray-900 border-gray-900" : "border-gray-300"
+                                                }`}
+                                        >
                                             <svg
-                                                className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180 text-white' : 'text-gray-500'}`}
+                                                className={`w-3 h-3 transition-transform ${showAdvanced ? "rotate-180 text-white" : "text-gray-500"
+                                                    }`}
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -392,33 +410,34 @@ export function NewPageButton({
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </div>
-                                        <span>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</span>
+                                        <span>{showAdvanced ? "Masquer les options avancées" : "Afficher les options avancées"}</span>
                                     </button>
 
                                     {showAdvanced && (
                                         <div className="mt-4 space-y-4 animate-in fade-in duration-200">
+                                            {/* NOTE: on garde slugOverride dans l’état, au cas où tu veux l’ajouter au UI plus tard */}
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <div>
                                                     <label className="block">
-                                                        <span className="text-sm font-medium text-gray-700">SEO Title</span>
+                                                        <span className="text-sm font-medium text-gray-700">Titre SEO</span>
                                                         <input
                                                             type="text"
                                                             className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                                             value={seoTitle}
                                                             onChange={(e) => setSeoTitle(e.target.value)}
-                                                            placeholder="Optional - for search engines"
+                                                            placeholder="Optionnel — pour les moteurs de recherche"
                                                         />
                                                     </label>
                                                 </div>
                                                 <div>
                                                     <label className="block">
-                                                        <span className="text-sm font-medium text-gray-700">SEO Description</span>
+                                                        <span className="text-sm font-medium text-gray-700">Description SEO</span>
                                                         <input
                                                             type="text"
                                                             className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                                             value={seoDescription}
                                                             onChange={(e) => setSeoDescription(e.target.value)}
-                                                            placeholder="Optional - for search engines"
+                                                            placeholder="Optionnel — courte description"
                                                         />
                                                     </label>
                                                 </div>
@@ -433,11 +452,12 @@ export function NewPageButton({
                         <div className="border-t border-gray-100 p-6 bg-gray-50/50">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-600">
-                                    <p className="font-medium mb-1">Example</p>
+                                    <p className="font-medium mb-1">Exemple</p>
                                     <p className="font-mono text-xs">
-                                        about/diagnostic → <span className="text-blue-600">/p/about/diagnostic</span>
+                                        a-propos/diagnostic → <span className="text-blue-600">/p/a-propos/diagnostic</span>
                                     </p>
                                 </div>
+
                                 <div className="flex items-center gap-3">
                                     <button
                                         type="button"
@@ -445,8 +465,9 @@ export function NewPageButton({
                                         className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
                                         disabled={submitting}
                                     >
-                                        Cancel
+                                        Annuler
                                     </button>
+
                                     <button
                                         type="button"
                                         onClick={submit}
@@ -456,14 +477,14 @@ export function NewPageButton({
                                         {submitting ? (
                                             <>
                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                Creating...
+                                                Création…
                                             </>
                                         ) : (
                                             <>
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                                 </svg>
-                                                Create Page
+                                                Créer la page
                                             </>
                                         )}
                                     </button>
