@@ -30,6 +30,9 @@ export {
   deleteDashboardUser,
 } from "./adminUsers";
 
+export { setDashboardUserRole } from "./setDashboardUserRole";
+
+
 
 /**
  * Stripe secret key (Gen2 + Firebase Secrets)

@@ -4,7 +4,6 @@ import { AdminPanel, AdminStat } from "../ui/AdminPanel";
 
 import { NavManager } from "../sections/NavManager";
 import { PagesManager } from "../sections/PagesManager";
-import HomePageManager from "../sections/HomePageManager";
 import { FooterManager } from "../sections/FooterManager";
 import { CookieConsentManager } from "../sections/CookieConsentManager";
 import { MembersManager } from "../sections/members/MembersManager";
@@ -38,7 +37,8 @@ import {
   FilePenLine,
   UserPlus,
 } from "lucide-react";
-import { SettingsManager } from "../sections/SettingsManager";
+import { SettingsManager } from "../sections/settings/SettingsManager";
+import HomePageManager from "../sections/homepage/HomePageManager";
 
 // ---- TYPES ----
 interface Metrics {
