@@ -13,6 +13,7 @@ import { NewsEditor } from "./components/NewsEditor";
 import { ContactEditor } from "./components/ContactEditor";
 import type { HomePageCMS } from "../../../../content/types/homePage";
 import { btnPrimary, btnSecondary } from "./utils/ui";
+import { HeaderCtasEditor } from "./components/HeaderCtasEditor";
 
 export default function HomePageManager() {
     const {
@@ -126,7 +127,27 @@ export default function HomePageManager() {
 
             <Toast toast={toast} />
 
-            <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
+
+
+                {/* CTAs Header */}
+                <SectionCard
+                    title="Boutons du haut (Header)"
+                    description="Configurer « Faire un don » et « Devenir membre » (Stripe ou lien externe)"
+                    isExpanded={expandedSections.has("headerCtas")}
+                    onToggle={() => toggleSection("headerCtas")}
+                    status={
+                        homepage.headerCtas?.donate?.enabled !== false ||
+                            homepage.headerCtas?.member?.enabled !== false
+                            ? "activé"
+                            : "désactivé"
+                    }
+                >
+                    {expandedSections.has("headerCtas") && (
+                        <HeaderCtasEditor homepage={homepage} setDraft={setDraft} />
+                    )}
+                </SectionCard>
+
                 {/* HERO */}
                 <SectionCard
                     title="Bannière principale (Hero)"

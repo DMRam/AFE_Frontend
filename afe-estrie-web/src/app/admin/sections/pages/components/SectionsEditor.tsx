@@ -1,4 +1,3 @@
-import React from "react";
 import type { AnySection } from "../types";
 import {
   Eye,

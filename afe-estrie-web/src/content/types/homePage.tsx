@@ -1,3 +1,5 @@
+import type { HeaderCtas } from "../../app/admin/sections/homepage/types";
+
 export type HeroCTA = {
   label: string;
   href: string;
@@ -173,7 +175,7 @@ export type HomeFooterCMS = {
 
 export type HomePageCMS = {
   updatedAt?: number;
-
+  headerCtas?: HeaderCtas;
   hero: HomeHeroCMS;
   quickCards: HomeQuickCardsCMS;
   features?: FeaturesBlockCMS;

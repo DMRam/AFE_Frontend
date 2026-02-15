@@ -81,6 +81,10 @@ export function seedHomePage(): HomePageCMS {
                 },
             ],
         },
+        headerCtas: {
+            donate: { enabled: true, label: "Faire un don", href: "#don" },
+            member: { enabled: true, label: "Devenir membre", mode: "stripe", href: "" },
+        },
 
         quickCards: {
             enabled: true,

@@ -183,7 +183,7 @@ export function PageDetailsForm({
                     <div className="mb-2 font-medium text-gray-900">Adresse</div>
                     <input
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600"
-                        value={`/${slug || ""}`}
+                        value={`${slug || ""}`}
                         disabled
                     />
                     <div className="mt-1 text-xs text-gray-500">Gérée automatiquement.</div>

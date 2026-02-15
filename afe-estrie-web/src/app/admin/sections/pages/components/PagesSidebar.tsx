@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { PageDoc } from "../../../../../content/types/pageBlocks";
 import type { CategoryOption } from "../types";
 import { Trash2 } from "lucide-react";

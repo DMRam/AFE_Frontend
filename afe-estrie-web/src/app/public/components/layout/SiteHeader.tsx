@@ -4,6 +4,7 @@ import { Heart, UserPlus } from "lucide-react";
 import { MemberModal } from "../../../../components/modals/MemberModal";
 import { useNavigation } from "../../../../hooks/useNavigation";
 import type { NavItem, NavNode } from "../../../../content/types/navTypes";
+import { useHomePagePublic } from "../../../../hooks/useHomePagePublic";
 
 function isHash(href?: string) {
   return Boolean(href && href.startsWith("#"));
@@ -25,9 +26,32 @@ type AnyNav = NavItem | NavNode;
 
 export function SiteHeader() {
   const { items, loading } = useNavigation();
+  const { home } = useHomePagePublic();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
+
+  // CTA config (with safe fallbacks)
+  const donateCta = {
+    enabled: home?.headerCtas?.donate?.enabled !== false,
+    label: home?.headerCtas?.donate?.label ?? "Faire un don",
+    href: home?.headerCtas?.donate?.href ?? "#don",
+  };
+
+  const memberCta = {
+    enabled: home?.headerCtas?.member?.enabled !== false,
+    label: home?.headerCtas?.member?.label ?? "Devenir membre",
+    mode: home?.headerCtas?.member?.mode ?? "stripe",
+    href: home?.headerCtas?.member?.href ?? "",
+  };
+
+  const openMember = () => {
+    if (memberCta.mode === "external") {
+      if (memberCta.href) window.location.href = memberCta.href;
+      return;
+    }
+    setMemberOpen(true);
+  };
 
   // Stack path for unlimited nesting: [menuId, submenuId, ...]
   const [path, setPath] = useState<string[]>([]);
@@ -140,33 +164,34 @@ export function SiteHeader() {
           </div>
         </a>
 
-
-
-
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-2">
-          <a
-            href="#don"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToHashWithOffset("#don", 92);
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-red-600/70 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:border-red-700 hover:bg-red-50 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-          >
-            <Heart className="h-4 w-4" aria-hidden="true" />
+          {donateCta.enabled && (
+            <a
+              href={donateCta.href}
+              onClick={(e) => {
+                if (donateCta.href?.startsWith("#")) {
+                  e.preventDefault();
+                  scrollToHashWithOffset(donateCta.href, 92);
+                }
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-red-600/70 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:border-red-700 hover:bg-red-50 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+            >
+              <Heart className="h-4 w-4" aria-hidden="true" />
+              {donateCta.label}
+            </a>
+          )}
 
-            Faire un don
-          </a>
-
-          <button
-            type="button"
-            onClick={() => setMemberOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-          >
-            <UserPlus className="h-4 w-4" aria-hidden="true" />
-
-            Devenir membre
-          </button>
+          {memberCta.enabled && (
+            <button
+              type="button"
+              onClick={openMember}
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+            >
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              {memberCta.label}
+            </button>
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -223,27 +248,30 @@ export function SiteHeader() {
               {path.length === 0 ? (
                 <>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleNavigate("#don")}
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-600/70 bg-white px-4 py-2 text-center text-sm font-semibold text-red-700 shadow-sm"
-                    >
-                      <Heart className="h-4 w-4" aria-hidden="true" />
+                    {donateCta.enabled && (
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate(donateCta.href)}
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-600/70 bg-white px-4 py-2 text-center text-sm font-semibold text-red-700 shadow-sm"
+                      >
+                        <Heart className="h-4 w-4" aria-hidden="true" />
+                        {donateCta.label}
+                      </button>
+                    )}
 
-                      Faire un don
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeDrawer();
-                        setMemberOpen(true);
-                      }}
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm"
-                    >
-                      <UserPlus className="h-4 w-4" aria-hidden="true" />
-                      Devenir membre
-                    </button>
+                    {memberCta.enabled && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeDrawer();
+                          openMember();
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm"
+                      >
+                        <UserPlus className="h-4 w-4" aria-hidden="true" />
+                        {memberCta.label}
+                      </button>
+                    )}
                   </div>
 
                   <div className="mt-4 border-t pt-4" />
@@ -256,7 +284,6 @@ export function SiteHeader() {
                   className={[
                     "space-y-2 transition-transform duration-300 ease-out",
                     "translate-x-0",
-                    // dir kept for future “push” animation if you want it
                     dir === "forward" ? "" : "",
                   ].join(" ")}
                 >

@@ -71,6 +71,19 @@ export function useHomePageDraft() {
 
             const normalized: HomePageCMS = {
                 ...draft,
+                headerCtas: {
+                    donate: {
+                        enabled: draft.headerCtas?.donate?.enabled !== false,
+                        label: draft.headerCtas?.donate?.label ?? "Faire un don",
+                        href: draft.headerCtas?.donate?.href ?? "#don",
+                    },
+                    member: {
+                        enabled: draft.headerCtas?.member?.enabled !== false,
+                        label: draft.headerCtas?.member?.label ?? "Devenir membre",
+                        mode: draft.headerCtas?.member?.mode === "external" ? "external" : "stripe",
+                        href: draft.headerCtas?.member?.href ?? "",
+                    },
+                },
                 hero: {
                     ...draft.hero,
                     intervalSeconds: clampNumber(draft.hero.intervalSeconds, 3, 30, 9),

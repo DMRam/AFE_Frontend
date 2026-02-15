@@ -10,3 +10,17 @@ export type ContactBlock = {
   hours?: { label: string; value: string }[];
   phones?: { label?: string; value: string }[];
 };
+
+export type HeaderCtas = {
+  donate?: {
+    enabled?: boolean;
+    label?: string;
+    href?: string;  
+  };
+  member?: {
+    enabled?: boolean;
+    label?: string;
+    mode?: "stripe" | "external";
+    href?: string;  
+  };
+};

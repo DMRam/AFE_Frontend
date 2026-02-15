@@ -29,8 +29,6 @@ import {
   Clock,
   FileText,
   Users,
-  HeartHandshake,
-  CalendarDays,
   LayoutDashboard,
   Home,
   FilePenLine,
@@ -321,7 +319,7 @@ function OverviewContent({
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6">
+    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="rounded-2xl border border-rose-100 bg-rose-50/40 p-5 shadow-sm">
 
@@ -369,32 +367,10 @@ function OverviewContent({
 
         </div>
 
-        {/* Optional feature placeholders */}
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-              <HeartHandshake className="h-4 w-4" />
-              Dons & campagnes (bientôt)
-            </div>
-            <div className="text-xs text-gray-600 mt-1">
-              Suivi des campagnes et messages de soutien.
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-              <CalendarDays className="h-4 w-4" />
-              Activités & événements (bientôt)
-            </div>
-            <div className="text-xs text-gray-600 mt-1">
-              Ateliers, groupes de soutien, conférences.
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-4">
         {statCards.map((stat, index) => (
           <AdminStat
             key={index}
@@ -406,7 +382,7 @@ function OverviewContent({
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 mt-4">
         {/* Recent Changes */}
         <div className="lg:col-span-1">
           <AdminPanel title="Dernières actions" description="Ce qui a été modifié récemment">
@@ -560,7 +536,7 @@ export default function AdminDashboard() {
     switch (activeSection) {
       case "overview":
         return (
-          <div className="space-y-4">
+          <div className="mx-auto max-w-8xl">
 
             <OverviewContent metrics={metrics} recent={recentActivity} onGo={setActiveSection} />
           </div>

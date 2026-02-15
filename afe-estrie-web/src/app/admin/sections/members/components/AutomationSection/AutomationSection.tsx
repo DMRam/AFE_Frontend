@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Send, RefreshCw, Mail } from "lucide-react";
+import { Send, Mail } from "lucide-react";
 import { getSendPreview } from "../../utils/membersUtils";
 import type { Member } from "../../../../../../services/membersRepo";
 import { MemberPreview } from "./MemberPreview";
@@ -121,7 +121,7 @@ export function AutomationSection({
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                    <button
+                                    {/* <button
                                         onClick={() => handleSendToAutomation()}
                                         disabled={isSending || selected.length === 0 || !isConfigured}
                                         className="flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -138,7 +138,7 @@ export function AutomationSection({
                                                 Envoyer directement
                                             </>
                                         )}
-                                    </button>
+                                    </button> */}
 
                                     <button
                                         onClick={() => setShowCampaignForm((v) => !v)}

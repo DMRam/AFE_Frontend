@@ -24,9 +24,9 @@ export function SlideCard({
               </span>
               <div>
                 <h4 className="font-semibold text-gray-900">
-                  {slide.title || `Slide ${index + 1}`}
+                  {slide.title || `Diapositive ${index + 1}`}
                 </h4>
-                <p className="text-xs text-gray-500">ID: {slide.id}</p>
+                <p className="text-xs text-gray-500">ID : {slide.id}</p>
               </div>
             </div>
 
@@ -43,19 +43,19 @@ export function SlideCard({
                   }}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Enabled</span>
+                <span className="text-sm font-medium text-gray-700">Actif</span>
               </label>
 
               <button
                 type="button"
                 onClick={() => setExpanded(!expanded)}
                 className="rounded-lg p-2 hover:bg-gray-100"
-                title={expanded ? "Collapse" : "Expand"}
+                title={expanded ? "Réduire" : "Développer"}
+                aria-label={expanded ? "Réduire" : "Développer"}
               >
                 <svg
-                  className={`h-5 w-5 text-gray-500 transition ${
-                    expanded ? "rotate-180" : ""
-                  }`}
+                  className={`h-5 w-5 text-gray-500 transition ${expanded ? "rotate-180" : ""
+                    }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -76,8 +76,9 @@ export function SlideCard({
                   setDraft({ ...draft, hero: { ...draft.hero, slides: next } });
                 }}
                 className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                title="Supprimer"
               >
-                Delete
+                Supprimer
               </button>
             </div>
           </div>
@@ -87,7 +88,7 @@ export function SlideCard({
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Display order
+                    Ordre d’affichage
                   </label>
                   <input
                     type="number"
@@ -104,7 +105,7 @@ export function SlideCard({
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Background video
+                    Vidéo d’arrière-plan
                   </label>
                   <select
                     value={slide.videoKey ?? "v1"}
@@ -116,9 +117,9 @@ export function SlideCard({
                     }}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                   >
-                    <option value="v1">Video 1</option>
-                    <option value="v2">Video 2</option>
-                    <option value="v3">Video 3</option>
+                    <option value="v1">Vidéo 1</option>
+                    <option value="v2">Vidéo 2</option>
+                    <option value="v3">Vidéo 3</option>
                   </select>
                 </div>
               </div>
@@ -126,7 +127,7 @@ export function SlideCard({
               <div className="grid gap-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Eyebrow
+                    Surtitre
                   </label>
                   <input
                     type="text"
@@ -138,13 +139,13 @@ export function SlideCard({
                       setDraft({ ...draft, hero: { ...draft.hero, slides: next } });
                     }}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    placeholder="e.g., Association • Estrie"
+                    placeholder="ex. Association • Estrie"
                   />
                 </div>
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Main title
+                    Titre principal
                   </label>
                   <input
                     type="text"
@@ -156,7 +157,7 @@ export function SlideCard({
                       setDraft({ ...draft, hero: { ...draft.hero, slides: next } });
                     }}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    placeholder="e.g., Welcome — AFE"
+                    placeholder="ex. Bienvenue — AFE"
                   />
                 </div>
 
@@ -174,7 +175,7 @@ export function SlideCard({
                     }}
                     rows={3}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    placeholder="Short slide description..."
+                    placeholder="Courte description de la diapositive..."
                   />
                 </div>
               </div>
@@ -182,7 +183,7 @@ export function SlideCard({
               {/* CTAs */}
               <div className="rounded-lg border border-gray-200 p-4">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-semibold text-gray-900">Call-to-actions</h5>
+                  <h5 className="font-semibold text-gray-900">Boutons d’action</h5>
                   <button
                     type="button"
                     onClick={() => {
@@ -195,7 +196,7 @@ export function SlideCard({
                     }}
                     className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white"
                   >
-                    + Add CTA
+                    + Ajouter un bouton
                   </button>
                 </div>
 
@@ -208,7 +209,7 @@ export function SlideCard({
                       <div className="grid gap-3 md:grid-cols-3">
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-700">
-                            Button label
+                            Libellé du bouton
                           </label>
                           <input
                             type="text"
@@ -225,13 +226,13 @@ export function SlideCard({
                               setDraft({ ...draft, hero: { ...draft.hero, slides: next } });
                             }}
                             className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
-                            placeholder="e.g., View activities"
+                            placeholder="ex. Voir les activités"
                           />
                         </div>
 
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-700">
-                            Link
+                            Lien
                           </label>
                           <input
                             type="text"
@@ -248,7 +249,7 @@ export function SlideCard({
                               setDraft({ ...draft, hero: { ...draft.hero, slides: next } });
                             }}
                             className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
-                            placeholder="e.g., /activities"
+                            placeholder="ex. /activites"
                           />
                         </div>
 
@@ -271,8 +272,8 @@ export function SlideCard({
                             }}
                             className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
                           >
-                            <option value="primary">Primary</option>
-                            <option value="secondary">Secondary</option>
+                            <option value="primary">Primaire</option>
+                            <option value="secondary">Secondaire</option>
                           </select>
                         </div>
                       </div>
@@ -281,7 +282,9 @@ export function SlideCard({
                         <button
                           type="button"
                           onClick={() => {
-                            const nextCtas = [...(slide.ctas ?? [])].filter((_: any, i: number) => i !== cIdx);
+                            const nextCtas = [...(slide.ctas ?? [])].filter(
+                              (_: any, i: number) => i !== cIdx
+                            );
                             const next = (draft.hero.slides ?? []).map((x: any) =>
                               x === slide ? { ...x, ctas: nextCtas } : x
                             );
@@ -289,14 +292,13 @@ export function SlideCard({
                           }}
                           className="rounded border border-red-300 bg-white px-3 py-1 text-sm text-red-600 hover:bg-red-50"
                         >
-                          Remove CTA
+                          Retirer
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-
             </div>
           )}
         </div>
