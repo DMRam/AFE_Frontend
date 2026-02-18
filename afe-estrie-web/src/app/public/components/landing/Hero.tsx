@@ -5,6 +5,7 @@ import v2 from "../../../../assets/videos/hero/v2.mp4";
 import v3 from "../../../../assets/videos/hero/v3.mp4";
 import type { HeroSlideCMS } from "../../../../content/types/homePage";
 
+
 const POSTER = "/images/afe-hero.jpg";
 const HERO_VIDEOS = { v1, v2, v3 } as const;
 type VideoKey = keyof typeof HERO_VIDEOS; // "v1" | "v2" | "v3"

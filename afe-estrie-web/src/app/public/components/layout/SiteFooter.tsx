@@ -3,20 +3,22 @@ import {
     Mail,
     MapPin,
     Phone,
-    Facebook,
-    Linkedin,
-    Instagram,
-    Youtube,
+    Search,
     ExternalLink,
 } from "lucide-react";
 import type { FooterCMS } from "../../../../content/types/footer";
 import { getFooter } from "../../../../services/footerRepo";
 
 const FALLBACK_ADMIN_URL = "https://afe-sherdev.web.app/admin/login";
+const SEARCH_PATH = "/recherche"; // <-- cambia a "/search" o la ruta real si quieres
 
-// -------- main component --------
+function s(v: any) {
+    return String(v ?? "").trim();
+}
+
 export function SiteFooter() {
     const [footer, setFooter] = useState<FooterCMS | null>(null);
+    const [q, setQ] = useState("");
 
     useEffect(() => {
         (async () => setFooter(await getFooter()))();
@@ -46,6 +48,19 @@ export function SiteFooter() {
         [footer]
     );
 
+    // ✅ Financial partner logic:
+    // - if any partner has isFinancial=true -> that one is featured
+    // - else: first one is featured
+    const financialPartner = useMemo(() => {
+        const byFlag = partners.find((p: any) => p?.isFinancial === true);
+        return byFlag ?? partners[0] ?? null;
+    }, [partners]);
+
+    const collaborators = useMemo(() => {
+        if (!financialPartner) return partners;
+        return partners.filter((p) => p.id !== (financialPartner as any).id);
+    }, [partners, financialPartner]);
+
     const adminHref =
         (footer as any)?.admin?.loginHref ||
         (footer as any)?.bottom?.adminHref ||
@@ -58,13 +73,20 @@ export function SiteFooter() {
 
     const hasBrand = !!footer?.brand?.logoSrc;
 
+    const onSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const query = s(q);
+        if (!query) return;
+        window.location.href = `${SEARCH_PATH}?q=${encodeURIComponent(query)}`;
+    };
+
     return (
         <footer className="bg-black text-white">
             <div className="mx-auto max-w-7xl px-6 py-12">
-                {/* Top section with logo and contact */}
+                {/* Top section */}
                 <div className="border-b border-white/10 pb-8">
                     <div className="grid gap-8 md:grid-cols-12">
-                        {/* Logo and tagline */}
+                        {/* Logo + tagline */}
                         <div className="md:col-span-4">
                             <div className="space-y-4">
                                 {hasBrand ? (
@@ -76,16 +98,16 @@ export function SiteFooter() {
                                 ) : (
                                     <div className="h-10 w-32 rounded bg-white/10" />
                                 )}
-                                
+
                                 {(footer as any)?.brand?.tagline ? (
-                                    <p className="text-sm text-white/70 max-w-xs">
+                                    <p className="max-w-xs text-sm text-white/70">
                                         {(footer as any).brand.tagline}
                                     </p>
                                 ) : null}
                             </div>
                         </div>
 
-                        {/* Contact info */}
+                        {/* Contact */}
                         <div className="md:col-span-4">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
@@ -93,25 +115,32 @@ export function SiteFooter() {
                                     {footer?.contact?.title ?? "Nous contacter"}
                                 </h3>
                             </div>
+
                             <div className="space-y-3">
                                 {footer?.contact?.phones?.map((phone, i) => (
                                     <div key={i} className="flex items-center gap-3 text-sm text-white/80">
                                         <Phone className="h-4 w-4 text-[#af2511]" />
-                                        <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-white hover:text-[#af2511] transition-colors">
+                                        <a
+                                            href={`tel:${phone.replace(/\s/g, "")}`}
+                                            className="transition-colors hover:text-[#af2511] hover:text-white"
+                                        >
                                             {phone}
                                         </a>
                                     </div>
                                 ))}
-                                
+
                                 {footer?.contact?.email ? (
                                     <div className="flex items-center gap-3 text-sm text-white/80">
                                         <Mail className="h-4 w-4 text-[#af2511]" />
-                                        <a href={`mailto:${footer.contact.email}`} className="hover:text-white hover:text-[#af2511] transition-colors">
+                                        <a
+                                            href={`mailto:${footer.contact.email}`}
+                                            className="transition-colors hover:text-[#af2511] hover:text-white"
+                                        >
                                             {footer.contact.email}
                                         </a>
                                     </div>
                                 ) : null}
-                                
+
                                 {footer?.contact?.addressLines?.length ? (
                                     <div className="flex items-start gap-3 text-sm text-white/80">
                                         <MapPin className="mt-0.5 h-4 w-4 text-[#af2511]" />
@@ -125,60 +154,36 @@ export function SiteFooter() {
                             </div>
                         </div>
 
-                        {/* Social links */}
+                        {/* ✅ Search instead of "Nous suivre" */}
                         <div className="md:col-span-4">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
                                 <h3 className="text-sm font-semibold text-white">
-                                    Nous suivre
+                                    {(footer as any)?.search?.title ?? "Rechercher"}
                                 </h3>
                             </div>
-                            <div className="flex items-center gap-3">
-                                {footer?.social?.facebook && (
-                                    <a
-                                        href={footer.social.facebook}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
-                                        aria-label="Facebook"
-                                    >
-                                        <Facebook className="h-5 w-5" />
-                                    </a>
-                                )}
-                                {footer?.social?.linkedin && (
-                                    <a
-                                        href={footer.social.linkedin}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
-                                        aria-label="LinkedIn"
-                                    >
-                                        <Linkedin className="h-5 w-5" />
-                                    </a>
-                                )}
-                                {footer?.social?.instagram && (
-                                    <a
-                                        href={footer.social.instagram}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
-                                        aria-label="Instagram"
-                                    >
-                                        <Instagram className="h-5 w-5" />
-                                    </a>
-                                )}
-                                {footer?.social?.youtube && (
-                                    <a
-                                        href={footer.social.youtube}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="h-10 w-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:border-[#af2511]/30 hover:bg-[#af2511]/10 transition-colors"
-                                        aria-label="YouTube"
-                                    >
-                                        <Youtube className="h-5 w-5" />
-                                    </a>
-                                )}
-                            </div>
+
+                            <form onSubmit={onSearchSubmit} className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+                                    <input
+                                        value={q}
+                                        onChange={(e) => setQ(e.target.value)}
+                                        placeholder={(footer as any)?.search?.placeholder ?? "Trouver une page, un sujet, une ressource…"}
+                                        className="w-full rounded-lg border border-white/15 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-[#af2511]/40"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:opacity-95"
+                                >
+                                    {(footer as any)?.search?.buttonLabel ?? "OK"}
+                                </button>
+                            </form>
+
+                            <p className="mt-3 text-xs text-white/50">
+                                {(footer as any)?.search?.hint ?? "Accès direct aux contenus du site."}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -186,21 +191,22 @@ export function SiteFooter() {
                 {/* Main content grid */}
                 <div className="py-8">
                     <div className="grid gap-8 md:grid-cols-12">
-                        {/* Quick links */}
+                        {/* Links */}
                         <div className="md:col-span-3">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
                                 <h3 className="text-sm font-semibold text-white">
-                                    {footer?.links?.title ?? "Liens rapides"}
+                                    {footer?.links?.title ?? "Liens"}
                                 </h3>
                             </div>
+
                             <ul className="space-y-2">
                                 {links.map((link) => (
                                     <li key={link.id} className="flex items-center gap-3">
                                         <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]" />
-                                        <a 
-                                            href={link.href} 
-                                            className="text-sm text-white/70 hover:text-white hover:text-[#af2511] transition-colors"
+                                        <a
+                                            href={link.href}
+                                            className="text-sm text-white/70 transition-colors hover:text-[#af2511] hover:text-white"
                                         >
                                             {link.label}
                                         </a>
@@ -215,31 +221,30 @@ export function SiteFooter() {
                             </ul>
                         </div>
 
-                        {/* Recent news */}
+                        {/* News */}
                         <div className="md:col-span-3">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
                                 <h3 className="text-sm font-semibold text-white">
-                                    {footer?.news?.title ?? "Actualités"}
+                                    {footer?.news?.title ?? "Nos Actualités"}
                                 </h3>
                             </div>
+
                             <div className="space-y-4">
                                 {news.slice(0, 2).map((item) => (
-                                    <a 
-                                        key={item.id} 
+                                    <a
+                                        key={item.id}
                                         href={item.href}
-                                        className="block group pl-2 border-l border-[#af2511]/30 hover:border-[#af2511] transition-colors"
+                                        className="group block border-l border-[#af2511]/30 pl-2 transition-colors hover:border-[#af2511]"
                                     >
-                                        <div className="text-xs text-white/60 mb-1">
-                                            {item.date}
-                                        </div>
-                                        <div className="text-sm text-white/80 group-hover:text-white group-hover:text-[#af2511] transition-colors">
+                                        <div className="mb-1 text-xs text-white/60">{item.date}</div>
+                                        <div className="text-sm text-white/80 transition-colors group-hover:text-[#af2511] group-hover:text-white">
                                             {item.title}
                                         </div>
                                     </a>
                                 ))}
                                 {news.length === 0 && (
-                                    <div className="flex items-center gap-3 pl-2 border-l border-[#af2511]/30">
+                                    <div className="flex items-center gap-3 border-l border-[#af2511]/30 pl-2">
                                         <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/30" />
                                         <div className="text-sm text-white/50">Aucune actualité</div>
                                     </div>
@@ -247,56 +252,83 @@ export function SiteFooter() {
                             </div>
                         </div>
 
-                        {/* Partners */}
+                        {/* Partners: Financial featured + Collaborators small */}
                         <div className="md:col-span-3">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
                                 <h3 className="text-sm font-semibold text-white">
-                                    {footer?.partner?.title ?? "Partenaires"}
+                                    {(footer as any)?.partner?.financialTitle ?? "Partenaire financier"}
                                 </h3>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {partners.slice(0, 4).map((partner) => (
-                                    <a
-                                        key={partner.id}
-                                        href={partner.href || '#'}
-                                        target={partner.href ? "_blank" : undefined}
-                                        rel={partner.href ? "noopener noreferrer" : undefined}
-                                        className="aspect-square bg-white rounded-lg flex items-center justify-center p-2 hover:opacity-90 transition-opacity border border-transparent hover:border-[#af2511]/30"
-                                    >
-                                        {partner.imageSrc ? (
-                                            <img 
-                                                src={partner.imageSrc} 
-                                                alt={partner.name}
-                                                className="max-h-full max-w-full object-contain"
-                                            />
-                                        ) : (
-                                            <span className="text-xs text-black/60 text-center">{partner.name}</span>
-                                        )}
-                                    </a>
-                                ))}
-                                {partners.length === 0 && (
-                                    <div className="col-span-2 flex items-center gap-3 pl-2 border-l border-[#af2511]/30">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/30" />
-                                        <div className="text-sm text-white/50">Aucun partenaire</div>
-                                    </div>
-                                )}
+
+                            {/* Featured financial partner */}
+                            {financialPartner ? (
+                                <a
+                                    href={(financialPartner as any).href || "#"}
+                                    target={(financialPartner as any).href ? "_blank" : undefined}
+                                    rel={(financialPartner as any).href ? "noopener noreferrer" : undefined}
+                                    className="block rounded-2xl bg-white p-4 shadow-sm transition hover:opacity-95"
+                                >
+                                    {(financialPartner as any).imageSrc ? (
+                                        <img
+                                            src={(financialPartner as any).imageSrc}
+                                            alt={(financialPartner as any).name}
+                                            className="h-28 w-full object-contain"
+                                        />
+                                    ) : (
+                                        <div className="py-10 text-center text-sm text-black/70">
+                                            {(financialPartner as any).name}
+                                        </div>
+                                    )}
+                                </a>
+                            ) : (
+                                <div className="rounded-2xl bg-white/5 p-4 text-sm text-white/50">
+                                    Aucun partenaire financier
+                                </div>
+                            )}
+
+                            {/* Collaborators */}
+                            <div className="mt-6">
+                                <div className="mb-3 text-xs font-semibold text-white/70">
+                                    {(footer as any)?.partner?.collaboratorsTitle ?? "Collaborateurs"}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    {collaborators.slice(0, 4).map((p: any) => (
+                                        <a
+                                            key={p.id}
+                                            href={p.href || "#"}
+                                            target={p.href ? "_blank" : undefined}
+                                            rel={p.href ? "noopener noreferrer" : undefined}
+                                            className="flex aspect-square items-center justify-center rounded-lg border border-transparent bg-white p-2 transition hover:border-[#af2511]/30 hover:opacity-95"
+                                        >
+                                            {p.imageSrc ? (
+                                                <img
+                                                    src={p.imageSrc}
+                                                    alt={p.name}
+                                                    className="max-h-full max-w-full object-contain"
+                                                />
+                                            ) : (
+                                                <span className="text-center text-xs text-black/60">{p.name}</span>
+                                            )}
+                                        </a>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Admin access */}
+                        {/* ✅ Administration */}
                         <div className="md:col-span-3">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
-                                <h3 className="text-sm font-semibold text-white">
-                                    Accès professionnel
-                                </h3>
+                                <h3 className="text-sm font-semibold text-white">Administration</h3>
                             </div>
+
                             <a
                                 href={adminHref}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-[#af2511]/10 hover:border-[#af2511]/30 hover:text-[#af2511] transition-colors"
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#af2511]/30 hover:bg-[#af2511]/10 hover:text-[#af2511]"
                             >
                                 {adminLabel}
                                 <ExternalLink className="h-4 w-4" />
@@ -308,35 +340,33 @@ export function SiteFooter() {
                 {/* Bottom bar */}
                 <div className="border-t border-white/10 pt-8">
                     <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-                        {/* Copyright */}
                         <div className="text-sm text-white/60">
                             © {new Date().getFullYear()} {footer?.brand?.name || "AFE"}. Tous droits réservés.
                         </div>
 
-                        {/* Legal links */}
                         <div className="flex items-center gap-4 text-sm text-white/60">
                             {footer?.bottom?.policyHref && (
-                                <a 
+                                <a
                                     href={footer.bottom.policyHref}
-                                    className="hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                                    className="flex items-center gap-2 transition-colors hover:text-[#af2511] hover:text-white"
                                 >
                                     <div className="h-1 w-1 rounded-full bg-[#af2511]" />
-                                    {footer.bottom.policyLabel ?? "Confidentialité"}
+                                    {footer.bottom.policyLabel ?? "Politique de confidentialité"}
                                 </a>
                             )}
                             {footer?.bottom?.cookiesHref && (
-                                <a 
+                                <a
                                     href={footer.bottom.cookiesHref}
-                                    className="hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                                    className="flex items-center gap-2 transition-colors hover:text-[#af2511] hover:text-white"
                                 >
                                     <div className="h-1 w-1 rounded-full bg-[#af2511]" />
-                                    {footer.bottom.cookiesLabel ?? "Cookies"}
+                                    {footer.bottom.cookiesLabel ?? "Politique de cookies"}
                                 </a>
                             )}
                             {footer?.bottom?.termsHref && (
-                                <a 
+                                <a
                                     href={footer.bottom.termsHref}
-                                    className="hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                                    className="flex items-center gap-2 transition-colors hover:text-[#af2511] hover:text-white"
                                 >
                                     <div className="h-1 w-1 rounded-full bg-[#af2511]" />
                                     {footer.bottom.termsLabel ?? "Conditions d'utilisation"}
@@ -344,11 +374,10 @@ export function SiteFooter() {
                             )}
                         </div>
 
-                        {/* Credit */}
                         {footer?.bottom?.creditText && (
-                            <a 
+                            <a
                                 href="https://sherdev.com/"
-                                className="text-sm text-white/60 hover:text-white hover:text-[#af2511] transition-colors flex items-center gap-2"
+                                className="flex items-center gap-2 text-sm text-white/60 transition-colors hover:text-[#af2511] hover:text-white"
                             >
                                 <div className="h-1 w-1 rounded-full bg-[#af2511]" />
                                 {footer.bottom.creditText}

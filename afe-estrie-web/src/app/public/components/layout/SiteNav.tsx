@@ -16,8 +16,12 @@ import { useClickOutside } from "../../../../hooks/useClickOutside";
 import { useFocusTrap } from "../../../../hooks/useFocusTrap";
 import { useNavigate } from "react-router-dom";
 
+import logoFooter from "../../../../assets/logo/logo-footer.png";
+import { Heart, UserPlus } from "lucide-react";
+import { useHomePagePublic } from "../../../../hooks/useHomePagePublic";
+import { MemberModal } from "../../../../components/modals/MemberModal";
 
-const CLOSE_DELAY = 320;
+const CLOSE_DELAY = 420;
 const MOBILE_BREAKPOINT = 768; // md
 
 // ---------- utils ----------
@@ -47,18 +51,13 @@ function startsWithPath(openPath: string[], parentPath: string[]): boolean {
 }
 
 // ---------- components ----------
-
-// Loading Skeleton Component
 function NavLoadingSkeleton() {
     return (
         <nav className="hidden md:block bg-red-700">
             <div className="mx-auto max-w-7xl px-6">
                 <div className="flex items-center justify-center gap-2 py-3">
                     {[...Array(5)].map((_, i) => (
-                        <div
-                            key={i}
-                            className="h-10 w-24 animate-pulse rounded-md bg-red-600"
-                        />
+                        <div key={i} className="h-10 w-24 animate-pulse rounded-md bg-red-600" />
                     ))}
                 </div>
             </div>
@@ -66,20 +65,14 @@ function NavLoadingSkeleton() {
     );
 }
 
-// Accessibility Announcement Component
 function LiveRegion({ message }: { message: string }) {
     return (
-        <div
-            aria-live="polite"
-            aria-atomic="true"
-            className="sr-only"
-        >
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
             {message}
         </div>
     );
 }
 
-// Main Navigation Component
 export function SiteNav() {
     const navigate = useNavigate();
     const { items: rawItems, loading, error } = useNavigation();
@@ -92,27 +85,42 @@ export function SiteNav() {
     const [announcement, setAnnouncement] = useState("");
     const closeTimer = useRef<number | null>(null);
 
-    const items = useMemo(
-        () => (rawItems ?? []).filter((x) => x.enabled !== false),
-        [rawItems]
-    );
+    const items = useMemo(() => (rawItems ?? []).filter((x) => x.enabled !== false), [rawItems]);
 
-    // Check mobile breakpoint
+    const { home } = useHomePagePublic();
+    const [memberOpen, setMemberOpen] = useState(false);
+
+    const donateCta = {
+        enabled: home?.headerCtas?.donate?.enabled !== false,
+        label: home?.headerCtas?.donate?.label ?? "Faire un don",
+        href: home?.headerCtas?.donate?.href ?? "#don",
+    };
+
+    const memberCta = {
+        enabled: home?.headerCtas?.member?.enabled !== false,
+        label: home?.headerCtas?.member?.label ?? "Devenir membre",
+        mode: home?.headerCtas?.member?.mode ?? "stripe",
+        href: home?.headerCtas?.member?.href ?? "",
+    };
+
+    const openMember = () => {
+        if (memberCta.mode === "external") {
+            if (memberCta.href) window.location.href = memberCta.href;
+            return;
+        }
+        setMemberOpen(true);
+    };
+
+    // mobile breakpoint
     useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-        };
-
+        const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
         checkMobile();
         window.addEventListener("resize", checkMobile);
         return () => window.removeEventListener("resize", checkMobile);
     }, []);
 
-    // Auto-close on click outside for mobile
     useClickOutside(navRef, () => {
-        if (isMobile && openPath.length > 0) {
-            closeAll();
-        }
+        if (isMobile && openPath.length > 0) closeAll();
     });
 
     const clearCloseTimer = useCallback(() => {
@@ -129,65 +137,54 @@ export function SiteNav() {
     }, [clearCloseTimer]);
 
     const closeSoon = useCallback(() => {
-        if (isMobile) return; // Don't auto-close on mobile
-
+        if (isMobile) return;
         clearCloseTimer();
         closeTimer.current = window.setTimeout(closeAll, CLOSE_DELAY);
     }, [clearCloseTimer, closeAll, isMobile]);
 
-    const onNavigate = useCallback((href?: string) => {
-        closeAll();
+    const onNavigate = useCallback(
+        (href?: string) => {
+            closeAll();
+            if (!href) return;
 
-        if (!href) return;
-
-        setTimeout(() => {
-            if (isHash(href)) {
-                if (!prefersReducedMotion) {
-                    scrollToHashWithOffset(href, 92);
-                } else {
-                    // Instant scroll for reduced motion preference
-                    const id = href.replace("#", "");
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.scrollIntoView();
-                        el.focus();
+            setTimeout(() => {
+                if (isHash(href)) {
+                    if (!prefersReducedMotion) {
+                        scrollToHashWithOffset(href, 92);
+                    } else {
+                        const id = href.replace("#", "");
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.scrollIntoView();
+                            el.focus();
+                        }
                     }
+                } else if (isExternal(href)) {
+                    window.open(href, "noopener,noreferrer");
+                } else {
+                    navigate(href);
                 }
-            } else if (isExternal(href)) {
-                window.open(href, "noopener,noreferrer");
-            } else {
-                navigate(href)
-            }
-        }, 0);
-    }, [closeAll, prefersReducedMotion]);
+            }, 0);
+        },
+        [closeAll, prefersReducedMotion, navigate]
+    );
 
-    // Keyboard navigation
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                closeAll();
-            }
-
-            // Close on Tab if focus leaves navigation
+            if (e.key === "Escape") closeAll();
             if (e.key === "Tab" && navRef.current) {
                 setTimeout(() => {
-                    if (!navRef.current?.contains(document.activeElement)) {
-                        closeAll();
-                    }
+                    if (!navRef.current?.contains(document.activeElement)) closeAll();
                 }, 10);
             }
         };
-
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [closeAll]);
 
-    // Focus trap for mobile menu
     useFocusTrap(navRef, openPath.length > 0 && isMobile);
 
-    if (loading) {
-        return <NavLoadingSkeleton />;
-    }
+    if (loading) return <NavLoadingSkeleton />;
 
     if (error) {
         return (
@@ -204,39 +201,100 @@ export function SiteNav() {
         );
     }
 
-    if (!items.length) {
-        return null;
-    }
+    if (!items.length) return null;
 
     return (
         <>
             <LiveRegion message={announcement} />
+
             <nav
                 ref={navRef}
-                className="hidden md:block bg-gradient-to-r from-red-700 to-red-600 shadow-lg"
+                className="hidden min-[1570px]:block bg-gradient-to-r from-red-700 to-red-600 shadow-lg"
                 aria-label="Main navigation"
             >
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <ul className="flex flex-wrap items-center justify-center gap-1 py-2">
-                        {items.map((item) => (
-                            <TopItem
-                                key={item.id}
-                                item={item}
-                                navAriaId={navId}
-                                openPath={openPath}
-                                setOpenPath={setOpenPath}
-                                onNavigate={onNavigate}
-                                closeSoon={closeSoon}
-                                closeAll={closeAll}
-                                clearCloseTimer={clearCloseTimer}
-                                isMobile={isMobile}
+
+                {/* ONE ROW: Logo | Menu | CTAs */}
+                <div
+                    className="w-full grid items-stretch"
+                    style={{
+                        gridTemplateColumns: "clamp(120px, 14vw, 260px) 1fr auto",
+                    }}
+                >
+                    {/* LEFT: logo block flush to edge */}
+                    <a href="/" className="h-full">
+                        <div className="h-full bg-white px-3 lg:px-4 flex items-center">
+                            <img
+                                src={logoFooter}
+                                alt="Association de la Fibromyalgie de l’Estrie"
+                                className="h-16 lg:h-24 w-full object-contain"
                             />
-                        ))}
-                    </ul>
+                        </div>
+                    </a>
+
+                    {/* CENTER: menu (flexible) */}
+                    <div className="min-w-0 px-2 lg:px-4 flex items-center">
+                        <ul className="flex items-center justify-center gap-1 flex-nowrap whitespace-nowrap w-full">
+                            {items.map((item) => (
+                                <TopItem
+                                    key={item.id}
+                                    item={item}
+                                    navAriaId={navId}
+                                    openPath={openPath}
+                                    setOpenPath={setOpenPath}
+                                    onNavigate={onNavigate}
+                                    closeSoon={closeSoon}
+                                    closeAll={closeAll}
+                                    clearCloseTimer={clearCloseTimer}
+                                    isMobile={isMobile}
+                                />
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* RIGHT: CTAs (compact on small desktop to avoid overlap) */}
+                    <div className="shrink-0 px-2 lg:px-4 flex items-center gap-2 whitespace-nowrap">
+                        {donateCta.enabled && (
+                            <a
+                                href={donateCta.href}
+                                onClick={(e) => {
+                                    if (donateCta.href?.startsWith("#")) {
+                                        e.preventDefault();
+                                        scrollToHashWithOffset(donateCta.href, 92);
+                                    }
+                                }}
+                                className="
+                inline-flex items-center gap-2 rounded-full bg-white
+                px-2 xl:px-3 py-2 text-sm font-extrabold text-red-700
+                shadow-sm hover:bg-red-50 transition
+              "
+                            >
+                                <Heart className="h-4 w-4" />
+                                <span className="hidden xl:inline">{donateCta.label}</span>
+                            </a>
+                        )}
+
+                        {memberCta.enabled && (
+                            <button
+                                type="button"
+                                onClick={openMember}
+                                className="
+                inline-flex items-center gap-2 rounded-full bg-red-900/90
+                px-2 xl:px-3 py-2 text-sm font-extrabold text-white
+                shadow-sm hover:bg-red-900 transition
+              "
+                            >
+                                <UserPlus className="h-4 w-4" />
+                                <span className="hidden xl:inline">{memberCta.label}</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </nav>
+
+            <MemberModal open={memberOpen} onClose={() => setMemberOpen(false)} />
         </>
     );
+
 }
 
 function TopItem({
@@ -275,34 +333,21 @@ function TopItem({
 
     const handleMouseLeave = (e: React.MouseEvent) => {
         if (!hasChildren || isMobile) return;
-
         const related = e.relatedTarget as HTMLElement;
         const currentTarget = e.currentTarget as HTMLElement;
-
-        // Check if mouse is moving to child menu
         const childMenu = currentTarget.querySelector('[role="menu"]');
-        if (childMenu?.contains(related)) {
-            // Mouse is moving to child menu, don't close
-            return;
-        }
-
+        if (childMenu?.contains(related)) return;
         closeSoon();
     };
 
     const handleClick = (e: React.MouseEvent) => {
         if (hasChildren) {
             e.preventDefault();
-            if (isOpen) {
-                closeAll();
-            } else {
-                setOpenPath([item.id]);
-            }
+            if (isOpen) closeAll();
+            else setOpenPath([item.id]);
             return;
         }
-
-        if (isHash(topHref)) {
-            e.preventDefault();
-        }
+        if (isHash(topHref)) e.preventDefault();
         onNavigate(topHref);
     };
 
@@ -311,11 +356,8 @@ function TopItem({
             case " ":
             case "Enter":
                 e.preventDefault();
-                if (hasChildren) {
-                    setOpenPath([item.id]);
-                } else {
-                    onNavigate(topHref);
-                }
+                if (hasChildren) setOpenPath([item.id]);
+                else onNavigate(topHref);
                 break;
             case "ArrowDown":
                 if (hasChildren && !isOpen) {
@@ -329,36 +371,32 @@ function TopItem({
         }
     };
 
+    const tabBase =
+        "group relative inline-flex items-center gap-1.5 rounded-md " +
+        "px-2 py-2 text-[15.5px] lg:text-[16px] font-extrabold leading-none " +
+        "transition-all duration-150 " +
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50";
+
+
+
     return (
-        <li
-            className="relative"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-        >
+        <li className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {hasChildren ? (
                 <button
                     ref={buttonRef}
                     onClick={handleClick}
                     onKeyDown={handleKeyDown}
-                    className={`
-                        group relative inline-flex items-center gap-2 rounded-t-lg px-4 py-2.5 
-                        text-sm font-semibold transition-all duration-150
-                        ${isOpen
-                            ? "bg-white/20 text-white shadow-inner"
-                            : "text-white/95 hover:text-white hover:bg-white/10"
-                        }
-                        ${isOpen ? "before:absolute before:inset-x-0 before:bottom-0 before:h-0.5 before:bg-white/30" : ""}
-                    `}
+                    className={[
+                        tabBase,
+                        isOpen ? "bg-white/20 text-white shadow-inner" : "text-white/95 hover:text-white hover:bg-white/10",
+                    ].join(" ")}
                     aria-haspopup="menu"
                     aria-expanded={isOpen}
                     aria-controls={`${navAriaId}-${item.id}`}
                 >
                     <span>{item.label}</span>
                     <ChevronDown
-                        className={`
-                            h-3.5 w-3.5 transition-transform duration-150
-                            ${isOpen ? "rotate-180" : ""}
-                        `}
+                        className={["h-4 w-4 transition-transform duration-150", isOpen ? "rotate-180" : ""].join(" ")}
                         aria-hidden="true"
                     />
                 </button>
@@ -366,19 +404,15 @@ function TopItem({
                 <a
                     href={topHref || "#"}
                     onClick={handleClick}
-                    className={`
-                        inline-flex items-center gap-2 rounded-lg px-4 py-2.5
-                        text-sm font-semibold text-white/95 transition-all duration-150
-                        hover:text-white hover:bg-white/10
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50
-                    `}
+                    className={[
+                        tabBase,
+                        "text-white/95 hover:text-white hover:bg-white/10",
+                    ].join(" ")}
                     target={isExternalLink ? "_blank" : undefined}
                     rel={isExternalLink ? "noopener noreferrer" : undefined}
                 >
                     {item.label}
-                    {isExternalLink && (
-                        <ExternalLink className="h-3 w-3 opacity-60" aria-hidden="true" />
-                    )}
+                    {isExternalLink && <ExternalLink className="h-4 w-4 opacity-70" aria-hidden="true" />}
                 </a>
             )}
 
@@ -433,11 +467,9 @@ function FlyoutMenu({
     const isVisible = startsWithPath(openPath, parentPath);
     const isNested = level > 0;
 
-    // Track if mouse entered from bottom
     const [enteredFromBottom, setEnteredFromBottom] = useState(false);
     const enterTimeoutRef = useRef<number | null>(null);
 
-    // Auto-position based on available space
     const [positionClass, setPositionClass] = useState("left-0");
 
     useEffect(() => {
@@ -448,65 +480,46 @@ function FlyoutMenu({
         const viewportWidth = window.innerWidth;
         const spaceOnRight = viewportWidth - triggerRect.right;
 
-        // Position horizontally
-        if (spaceOnRight < menuWidth && triggerRect.left > menuWidth) {
-            setPositionClass("right-0");
-        } else {
-            setPositionClass("left-0");
-        }
+        if (spaceOnRight < menuWidth && triggerRect.left > menuWidth) setPositionClass("right-0");
+        else setPositionClass("left-0");
     }, [isMobile, triggerRef, isVisible]);
 
-    const handleKeyNavigation = useCallback((e: React.KeyboardEvent) => {
-        const menuItems = menuRef.current?.querySelectorAll<HTMLElement>('a, button');
-        if (!menuItems?.length) return;
+    const handleKeyNavigation = useCallback(
+        (e: React.KeyboardEvent) => {
+            const menuItems = menuRef.current?.querySelectorAll<HTMLElement>("a, button");
+            if (!menuItems?.length) return;
 
-        const currentIndex = Array.from(menuItems).findIndex(
-            item => item === document.activeElement
-        );
+            const currentIndex = Array.from(menuItems).findIndex((item) => item === document.activeElement);
 
-        switch (e.key) {
-            case "ArrowDown":
-                e.preventDefault();
-                if (currentIndex < menuItems.length - 1) {
-                    menuItems[currentIndex + 1]?.focus();
-                }
-                break;
-            case "ArrowUp":
-                e.preventDefault();
-                if (currentIndex > 0) {
-                    menuItems[currentIndex - 1]?.focus();
-                } else {
-                    triggerRef?.current?.focus();
-                }
-                break;
-            case "ArrowRight":
-                if (isNested) {
+            switch (e.key) {
+                case "ArrowDown":
                     e.preventDefault();
-                    // Already in nested menu
-                }
-                break;
-            case "ArrowLeft":
-                e.preventDefault();
-                if (isNested) {
-                    setOpenPath(parentPath.slice(0, -1));
-                } else {
+                    if (currentIndex < menuItems.length - 1) menuItems[currentIndex + 1]?.focus();
+                    break;
+                case "ArrowUp":
+                    e.preventDefault();
+                    if (currentIndex > 0) menuItems[currentIndex - 1]?.focus();
+                    else triggerRef?.current?.focus();
+                    break;
+                case "ArrowLeft":
+                    e.preventDefault();
+                    if (isNested) setOpenPath(parentPath.slice(0, -1));
+                    else closeAll();
+                    break;
+                case "Escape":
+                    e.preventDefault();
                     closeAll();
-                }
-                break;
-            case "Escape":
-                e.preventDefault();
-                closeAll();
-                triggerRef?.current?.focus();
-                break;
-        }
-    }, [isNested, parentPath, setOpenPath, closeAll, triggerRef]);
+                    triggerRef?.current?.focus();
+                    break;
+            }
+        },
+        [isNested, parentPath, setOpenPath, closeAll, triggerRef]
+    );
 
-    // Handle mouse enter/leave to fix the hover issue
     const handleMouseEnter = useCallback(() => {
         clearCloseTimer();
         setEnteredFromBottom(false);
 
-        // Clear any existing timeout
         if (enterTimeoutRef.current) {
             clearTimeout(enterTimeoutRef.current);
             enterTimeoutRef.current = null;
@@ -515,72 +528,47 @@ function FlyoutMenu({
         setOpenPath(parentPath);
     }, [clearCloseTimer, setOpenPath, parentPath]);
 
-    const handleMouseLeave = useCallback((e: React.MouseEvent) => {
-        if (isMobile) return;
+    const handleMouseLeave = useCallback(
+        (e: React.MouseEvent) => {
+            if (isMobile) return;
 
-        const related = e.relatedTarget as HTMLElement | null;
-        const currentTarget = e.currentTarget as HTMLElement;
+            const related = e.relatedTarget as HTMLElement | null;
+            const currentTarget = e.currentTarget as HTMLElement;
 
-        // Check if mouse is moving to a child element within the same menu
-        if (related && currentTarget.contains(related)) {
-            // Mouse is moving to a child, don't close
-            return;
-        }
+            if (related && currentTarget.contains(related)) return;
 
-        // Check if mouse is moving to the parent menu (for nested menus)
-        if (isNested) {
-            const parentMenu = currentTarget.closest('[role="menu"]');
-            if (parentMenu && parentMenu.contains(related)) {
-                // Mouse is moving to parent menu, don't close
-                return;
+            if (isNested) {
+                const parentMenu = currentTarget.closest('[role="menu"]');
+                if (parentMenu && parentMenu.contains(related)) return;
             }
-        }
 
-        // Check if mouse is moving to the trigger element
-        if (triggerRef?.current && triggerRef.current.contains(related)) {
-            // Mouse is moving back to trigger, don't close
-            return;
-        }
+            if (triggerRef?.current && triggerRef.current.contains(related)) return;
 
-        // Only close if mouse is truly leaving the menu area
-        closeSoon();
-    }, [isMobile, isNested, triggerRef, closeSoon]);
+            closeSoon();
+        },
+        [isMobile, isNested, triggerRef, closeSoon]
+    );
 
-    // Detect if mouse entered from bottom
     useEffect(() => {
         if (!menuRef.current || !isVisible) return;
-
         const menu = menuRef.current;
 
         const handleMouseMove = (e: MouseEvent) => {
             const rect = menu.getBoundingClientRect();
-            // If mouse is near the bottom edge when entering
-            if (e.clientY > rect.bottom - 10) {
-                setEnteredFromBottom(true);
-            }
+            if (e.clientY > rect.bottom - 10) setEnteredFromBottom(true);
         };
 
-        if (isVisible) {
-            menu.addEventListener('mousemove', handleMouseMove);
-        }
-
-        return () => {
-            menu.removeEventListener('mousemove', handleMouseMove);
-        };
+        menu.addEventListener("mousemove", handleMouseMove);
+        return () => menu.removeEventListener("mousemove", handleMouseMove);
     }, [isVisible]);
 
-    // Clean up timeout on unmount
     useEffect(() => {
         return () => {
-            if (enterTimeoutRef.current) {
-                clearTimeout(enterTimeoutRef.current);
-            }
+            if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
         };
     }, []);
 
-    if (!isVisible && !isMobile) {
-        return null;
-    }
+    if (!isVisible && !isMobile) return null;
 
     return (
         <div
@@ -592,54 +580,44 @@ function FlyoutMenu({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={`
-                absolute origin-top transition-all duration-150 ease-out
-                ${level === 0 ? "z-50" : "z-[60]"}
-                ${level === 0
+        absolute origin-top transition-all duration-150 ease-out
+        ${level === 0 ? "z-50" : "z-[60]"}
+        ${level === 0
                     ? `top-full ${positionClass} min-w-[280px] max-w-[380px]`
-                    : "left-full top-0 ml-[2px] min-w-[260px]"  // Reduced gap with ml-[2px]
+                    : "left-full top-0 ml-[2px] min-w-[260px]"
                 }
-                ${level === 0 ? "mt-[-2px]" : ""}  /* Remove gap for top-level */
-                ${isVisible
+        ${level === 0 ? "mt-[-2px]" : ""}
+        ${isVisible
                     ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
                     : "opacity-0 scale-[0.98] translate-y-1 pointer-events-none"
                 }
-                ${isMobile ? "fixed inset-x-4 top-20 max-h-[70vh] overflow-y-auto" : ""}
-                ${enteredFromBottom ? "enter-from-bottom" : ""}
-            `}
+        ${isMobile ? "fixed inset-x-4 top-20 max-h-[70vh] overflow-y-auto" : ""}
+        ${enteredFromBottom ? "enter-from-bottom" : ""}
+      `}
             style={{
-                animation: isMobile && isVisible
-                    ? "slideInUp 0.2s ease-out"
-                    : "none",
-                // For nested menus, ensure they appear closer to parent item
-                ...(isNested && {
-                    marginTop: '-4px', // Pulls submenu up closer to parent
-                }),
+                animation: isMobile && isVisible ? "slideInUp 0.2s ease-out" : "none",
+                ...(isNested && { marginTop: "-4px" }),
             }}
         >
-            {/* Arrow pointer for top-level menu */}
             {level === 0 && !isMobile && (
-                <div className={`
-                    absolute -top-1 h-2 w-2 rotate-45 bg-white
-                    ${positionClass === "right-0" ? "right-4" : "left-4"}
-                `} />
+                <div
+                    className={`
+            absolute -top-1 h-2 w-2 rotate-45 bg-white
+            ${positionClass === "right-0" ? "right-4" : "left-4"}
+          `}
+                />
             )}
 
-            {/* Hover bridge to eliminate dead zone for top-level */}
-            {level === 0 && !isMobile && (
-                <div className="absolute -top-2 left-0 right-0 h-2 bg-transparent" />
-            )}
+            {level === 0 && !isMobile && <div className="absolute -top-2 left-0 right-0 h-2 bg-transparent" />}
+            {isNested && !isMobile && <div className="absolute -left-1 top-0 bottom-0 w-1 bg-transparent" />}
 
-            {/* Hover bridge for nested menus - connects to parent menu item */}
-            {isNested && !isMobile && (
-                <div className="absolute -left-1 top-0 bottom-0 w-1 bg-transparent" />
-            )}
-
-            <div className={`
-                rounded-lg bg-white shadow-lg ring-1 ring-black/10
-                ${isMobile ? "max-h-inherit" : ""}
-                ${level === 0 ? "border-t border-red-600" : ""}
-                ${isNested ? "shadow-xl" : ""}
-            `}>
+            <div
+                className={`
+          rounded-lg bg-white shadow-lg ring-1 ring-black/10
+          ${level === 0 ? "border-t border-red-600" : ""}
+          ${isNested ? "shadow-xl" : ""}
+        `}
+            >
                 <div className="py-1.5">
                     {nodes.map((node) => {
                         const hasChildren = !!node.children?.length;
@@ -654,55 +632,26 @@ function FlyoutMenu({
                                 onMouseEnter={() => {
                                     if (isMobile) return;
                                     clearCloseTimer();
-
-                                    // For nested menus, also clear parent's timer
-                                    if (isNested) {
-                                        const parentMenu = menuRef.current?.closest('[role="menu"]');
-                                        if (parentMenu) {
-                                            // Find the parent's clearCloseTimer somehow
-                                            // We'll need to pass additional context
-                                        }
-                                    }
-
-                                    if (hasChildren) {
-                                        setOpenPath(nodePath);
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (isMobile) return;
-
-                                    const related = e.relatedTarget as HTMLElement;
-                                    const currentTarget = e.currentTarget as HTMLElement;
-
-                                    // If mouse is moving to child menu, don't trigger close
-                                    if (related && hasChildren) {
-                                        const childMenu = currentTarget.querySelector('[role="menu"]');
-                                        if (childMenu?.contains(related)) {
-                                            return;
-                                        }
-                                    }
+                                    if (hasChildren) setOpenPath(nodePath);
                                 }}
                             >
                                 <a
                                     href={node.href || "#"}
                                     className={`
-                                        flex items-center justify-between px-4 py-2.5
-                                        text-sm font-medium text-gray-900 transition-colors duration-150
-                                        hover:bg-red-50
-                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
-                                        ${hasChildren ? "pr-3" : ""}
-                                        ${level === 0 && !isNested ? "first:rounded-t-[5px]" : ""}
-                                        ${isNested ? "pl-5" : ""}  /* Add padding for nested items */
-                                    `}
+                    flex items-center justify-between px-4 py-2.5
+                    text-sm font-medium text-gray-900 transition-colors duration-150
+                    hover:bg-red-50
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
+                    ${hasChildren ? "pr-3" : ""}
+                    ${isNested ? "pl-5" : ""}
+                  `}
                                     onClick={(e) => {
                                         if (hasChildren && !isMobile) {
                                             e.preventDefault();
                                             setOpenPath(nodePath);
                                             return;
                                         }
-                                        if (isHash(node.href) || isNodeExternal) {
-                                            e.preventDefault();
-                                        }
+                                        if (isHash(node.href) || isNodeExternal) e.preventDefault();
                                         onNavigate(node.href);
                                     }}
                                     target={isNodeExternal ? "_blank" : undefined}
@@ -717,11 +666,9 @@ function FlyoutMenu({
                                         )}
                                         <span className="flex-1">{node.label}</span>
                                     </div>
+
                                     {(hasChildren || isNodeExternal) && (
-                                        <Icon
-                                            className="h-3.5 w-3.5 text-gray-400 group-hover:text-red-600 transition-colors"
-                                            aria-hidden="true"
-                                        />
+                                        <Icon className="h-3.5 w-3.5 text-gray-400 group-hover:text-red-600 transition-colors" />
                                     )}
                                 </a>
 
@@ -745,13 +692,8 @@ function FlyoutMenu({
                 </div>
             </div>
 
-            {/* Mobile backdrop */}
             {isMobile && isVisible && (
-                <div
-                    className="fixed inset-0 bg-black/20 -z-10"
-                    onClick={closeAll}
-                    aria-hidden="true"
-                />
+                <div className="fixed inset-0 bg-black/20 -z-10" onClick={closeAll} aria-hidden="true" />
             )}
         </div>
     );

@@ -12,6 +12,7 @@ import {
 import { CookieConsent } from "./components/layout/CookieConsent";
 import { MembershipSuccessPage } from "./pages/membership/Success";
 import { MembershipCancelPage } from "./pages/membership/Cancel";
+import { SearchPage } from "./pages/SearchPage";
 
 export function PublicApp() {
   const [cookieCms, setCookieCms] = useState<CookieConsentCMS | null>(null);
@@ -30,6 +31,7 @@ export function PublicApp() {
         <Route element={<PublicLayout />}>
           <Route path="/membership/success" element={<MembershipSuccessPage />} />
           <Route path="/membership/cancel" element={<MembershipCancelPage />} />
+          <Route path="/recherche" element={<SearchPage />} />
           <Route path="/" element={<Landing />} />
           <Route path="/p/*" element={<DynamicPage />} />
         </Route>

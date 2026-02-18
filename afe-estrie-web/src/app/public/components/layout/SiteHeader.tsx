@@ -5,6 +5,7 @@ import { MemberModal } from "../../../../components/modals/MemberModal";
 import { useNavigation } from "../../../../hooks/useNavigation";
 import type { NavItem, NavNode } from "../../../../content/types/navTypes";
 import { useHomePagePublic } from "../../../../hooks/useHomePagePublic";
+import { useNavigate } from "react-router-dom";
 
 function isHash(href?: string) {
   return Boolean(href && href.startsWith("#"));
@@ -27,6 +28,8 @@ type AnyNav = NavItem | NavNode;
 export function SiteHeader() {
   const { items, loading } = useNavigation();
   const { home } = useHomePagePublic();
+  const navigate = useNavigate();
+
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
@@ -55,7 +58,7 @@ export function SiteHeader() {
 
   // Stack path for unlimited nesting: [menuId, submenuId, ...]
   const [path, setPath] = useState<string[]>([]);
-  const [dir, setDir] = useState<"forward" | "back">("forward"); // (optional) for animations later
+  const [_dir, setDir] = useState<"forward" | "back">("forward"); // (optional) for animations later
 
   const closeDrawer = () => {
     setDrawerOpen(false);
@@ -130,13 +133,12 @@ export function SiteHeader() {
 
   const handleNavigate = (href?: string) => {
     if (!href) return;
-
-    // close drawer first (so the scroll works properly on iOS)
     closeDrawer();
 
     window.setTimeout(() => {
       if (isHash(href)) scrollToHashWithOffset(href, 92);
-      else window.location.href = href;
+      else if (href.startsWith("http")) window.open(href, "_blank", "noopener,noreferrer");
+      else navigate(href);
     }, 50);
   };
 
@@ -152,62 +154,35 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        {/* Left */}
-        <a href="#" className="flex items-center gap-3">
-          <img src={logoFooter} alt="AFE" className="h-12 sm:h-16 object-contain" />
+      {/* DESKTOP: el header visual va en <SiteNav /> */}
+      {/* MOBILE: dejamos una barra simple con logo + boton */}
+      <div className="min-[1570px]:hidden border-b bg-white">
 
-          <div className="hidden sm:block leading-tight">
-            <p className="text-sm uppercase tracking-wide text-gray-500">Association de la</p>
-            <p className="text-2xl font-semibold text-red-700">Fibromyalgie</p>
-            <p className="text-sm uppercase tracking-wide text-gray-500">de l’Estrie</p>
-          </div>
-        </a>
 
-        {/* Desktop CTAs */}
-        <div className="hidden md:flex items-center gap-2">
-          {donateCta.enabled && (
-            <a
-              href={donateCta.href}
-              onClick={(e) => {
-                if (donateCta.href?.startsWith("#")) {
-                  e.preventDefault();
-                  scrollToHashWithOffset(donateCta.href, 92);
-                }
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-red-600/70 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:border-red-700 hover:bg-red-50 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-            >
-              <Heart className="h-4 w-4" aria-hidden="true" />
-              {donateCta.label}
-            </a>
-          )}
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+          <a href="#" className="flex items-center gap-3">
+            <img src={logoFooter} alt="AFE" className="h-12 object-contain" />
+            <div className="leading-tight">
+              <p className="text-sm uppercase tracking-wide text-gray-500">Association de la</p>
+              <p className="text-xl font-semibold text-red-700">Fibromyalgie</p>
+              <p className="text-sm uppercase tracking-wide text-gray-500">de l’Estrie</p>
+            </div>
+          </a>
 
-          {memberCta.enabled && (
-            <button
-              type="button"
-              onClick={openMember}
-              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-            >
-              <UserPlus className="h-4 w-4" aria-hidden="true" />
-              {memberCta.label}
-            </button>
-          )}
+          <button
+            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-3xl font-semibold shadow-sm"
+            aria-label="Ouvrir le menu"
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen(true)}
+          >
+            ☰
+          </button>
         </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden inline-flex items-center justify-center rounded-xl px-3 py-2 text-3xl font-semibold"
-          aria-label="Ouvrir le menu"
-          aria-expanded={drawerOpen}
-          onClick={() => setDrawerOpen(true)}
-        >
-          ☰
-        </button>
       </div>
 
-      {/* MOBILE DRAWER */}
+      {/* MOBILE DRAWER (tu código igual) */}
       {drawerOpen && (
-        <div className="md:hidden">
+        <div className="min-[1570px]:hidden">
           {/* Backdrop */}
           <button
             aria-label="Fermer"
@@ -280,13 +255,7 @@ export function SiteHeader() {
 
               {/* List */}
               <div className="relative overflow-hidden">
-                <ul
-                  className={[
-                    "space-y-2 transition-transform duration-300 ease-out",
-                    "translate-x-0",
-                    dir === "forward" ? "" : "",
-                  ].join(" ")}
-                >
+                <ul className="space-y-2">
                   {loading ? (
                     <li className="rounded-xl bg-gray-50 px-3 py-3 text-sm text-gray-600">
                       Chargement…
@@ -331,4 +300,5 @@ export function SiteHeader() {
       <MemberModal open={memberOpen} onClose={() => setMemberOpen(false)} />
     </header>
   );
+
 }

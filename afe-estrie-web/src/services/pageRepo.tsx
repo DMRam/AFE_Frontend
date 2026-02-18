@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  where,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { PageDoc } from "../content/types/pageBlocks";
@@ -85,3 +86,58 @@ export async function getPageByPageId(pageId: string): Promise<PageDoc | null> {
   return getPageByDocId(docId);
 }
 
+export type PublicPageHit = {
+  slug: string;
+  title: string;
+  excerpt?: string;
+};
+
+function safeExcerptFromBlocks(page: any): string {
+  const texts: string[] = [];
+
+  const push = (v: any) => {
+    const t = String(v ?? "").trim();
+    if (t) texts.push(t);
+  };
+
+  push(page?.title);
+  push(page?.subtitle);
+  push(page?.description);
+
+  const sections = page?.sections ?? [];
+  if (Array.isArray(sections)) {
+    for (const s of sections) {
+      push(s?.title);
+      push(s?.subtitle);
+      push(s?.text);
+      push(s?.body);
+      push(s?.description);
+
+      if (Array.isArray(s?.items)) {
+        for (const it of s.items) {
+          push(it?.title);
+          push(it?.subtitle);
+          push(it?.text);
+          push(it?.body);
+          push(it?.description);
+        }
+      }
+    }
+  }
+
+  const joined = texts.join(" ").replace(/\s+/g, " ").trim();
+  return joined.slice(0, 260);
+}
+
+
+export async function listPublicPages(): Promise<PublicPageHit[]> {
+  const qy = query(collection(db, PAGES_COL), where("published", "==", true));
+  const snap = await getDocs(qy);
+  const pages = snap.docs.map((d) => d.data() as PageDoc);
+
+  return pages.map((p: any) => ({
+    slug: p.id,
+    title: p.title ?? p.id,
+    excerpt: p.excerpt ?? p.description ?? safeExcerptFromBlocks(p),
+  }));
+}
