@@ -4,11 +4,12 @@ import type { FooterCMS, SocialId } from "../../../content/types/footer";
 import { getFooter } from "../../../services/footerRepo";
 
 const ICONS: Record<SocialId, React.ReactNode> = {
-    facebook: <Facebook className="h-4 w-4" />,
-    linkedin: <Linkedin className="h-4 w-4" />,
-    instagram: <Instagram className="h-4 w-4" />,
-    youtube: <Youtube className="h-4 w-4" />,
+    facebook: <Facebook className="h-6 w-6" />,
+    linkedin: <Linkedin className="h-6 w-6" />,
+    instagram: <Instagram className="h-6 w-6" />,
+    youtube: <Youtube className="h-6 w-6" />,
 };
+
 
 function hoverClassById(id: SocialId) {
     switch (id) {
@@ -56,7 +57,7 @@ export const FloatingSocial = () => {
         <div className="fixed bottom-6 right-6 z-[9999]">
             <div className="flex flex-col items-center gap-3">
                 {/* top decorative line */}
-                <div className="h-8 w-0.5 bg-gradient-to-b from-gray-300/50 to-transparent" />
+                <div className="h-10 w-0.5 bg-gradient-to-b from-gray-300/50 to-transparent" />
 
                 <div className="flex flex-col gap-3">
                     {socials.map((social) => (
@@ -67,7 +68,7 @@ export const FloatingSocial = () => {
                             rel="noopener noreferrer"
                             aria-label={social.label}
                             className={[
-                                "group relative flex h-10 w-10 items-center justify-center rounded-full",
+                                "group relative flex h-12 w-12 items-center justify-center rounded-full",
                                 "border border-gray-200/80 bg-white/90 backdrop-blur-sm",
                                 "shadow-lg transition-all duration-300",
                                 "hover:scale-110 hover:shadow-xl",

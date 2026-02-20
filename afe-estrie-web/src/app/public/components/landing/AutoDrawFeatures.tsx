@@ -22,6 +22,7 @@ type Block = {
   items?: CMSItem[];
   ctaText?: string;
   ctaLink?: string;
+  ctaEnabled?: boolean;
 };
 
 function useInViewOnce<T extends HTMLElement>(rootMargin = "-10% 0px -10% 0px") {
@@ -200,6 +201,7 @@ function CircleIcon({ icon, animate }: { icon: IconKey; animate: boolean }) {
 }
 
 export function AutoDrawFeatures({ home }: { home?: HomePageCMS | null }) {
+
   const { ref, inView } = useInViewOnce<HTMLDivElement>();
 
   const block = (((home as any)?.features ?? (home as any)?.symptoms) as Block | undefined) ?? undefined;
@@ -212,7 +214,8 @@ export function AutoDrawFeatures({ home }: { home?: HomePageCMS | null }) {
 
   const ctaText = block?.ctaText ?? "Découvrir notre approche";
   const ctaLink = block?.ctaLink ?? "/p/a-propos/axes";
-  
+  const ctaEnabled = block?.ctaEnabled !== false;
+
 
   const items = useMemo(() => {
     const raw = (block?.items ?? [])
@@ -245,7 +248,7 @@ export function AutoDrawFeatures({ home }: { home?: HomePageCMS | null }) {
         @keyframes dash { to { stroke-dashoffset: 0; } }
       `}</style>
 
-      <div ref={ref} className="mx-auto max-w-6xl px-4 sm:px-6 text-center">
+      <div ref={ref} className="mx-auto max-w-8xl px-4 sm:px-6 text-center">
         <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
           {heading}
         </h2>
@@ -279,11 +282,12 @@ export function AutoDrawFeatures({ home }: { home?: HomePageCMS | null }) {
           ))}
         </div>
 
-        {/* CTA Button - plus organique */}
-        <div className="mt-12 sm:mt-16">
-          <a
-            href={ctaLink}
-            className="
+        {/* CTA Button */}
+        {ctaEnabled && !!ctaLink && (
+          <div className="mt-12 sm:mt-16">
+            <a
+              href={ctaLink}
+              className="
               relative inline-flex items-center justify-center
               px-8 sm:px-10 py-4 sm:py-5
               bg-white text-[#b33a22] font-extrabold text-base sm:text-lg
@@ -294,24 +298,25 @@ export function AutoDrawFeatures({ home }: { home?: HomePageCMS | null }) {
               group
               overflow-hidden
             "
-          >
-            {/* Vague organique au fond */}
-            <span className="absolute inset-0 bg-gradient-to-r from-red-100/50 to-white/50 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
+            >
+              {/* Vague organique au fond */}
+              <span className="absolute inset-0 bg-gradient-to-r from-red-100/50 to-white/50 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
 
-            <span className="relative flex items-center">
-              {ctaText}
-              <svg
-                className="ml-2 h-5 w-5 transition-all duration-500 group-hover:translate-x-2 group-hover:rotate-12"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </span>
-          </a>
-        </div>
+              <span className="relative flex items-center">
+                {ctaText}
+                <svg
+                  className="ml-2 h-5 w-5 transition-all duration-500 group-hover:translate-x-2 group-hover:rotate-12"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </span>
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );

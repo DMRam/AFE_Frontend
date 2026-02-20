@@ -81,48 +81,57 @@ export function SiteFooter() {
     };
 
     return (
-        <footer className="bg-black text-white">
-            <div className="mx-auto max-w-7xl px-6 py-12">
-                {/* Top section */}
-                <div className="border-b border-white/10 pb-8">
-                    <div className="grid gap-8 md:grid-cols-12">
-                        {/* Logo + tagline */}
+        <footer className="bg-white text-gray-900">
+            <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
+                {/* TOP STRIP */}
+                <div className="border-t border-gray-200/70 pt-12">
+                    <div className="grid gap-10 md:grid-cols-12">
+                        {/* Brand */}
                         <div className="md:col-span-4">
                             <div className="space-y-4">
                                 {hasBrand ? (
                                     <img
                                         src={footer!.brand!.logoSrc}
                                         alt={footer?.brand?.alt ?? "AFE"}
-                                        className="h-20 w-auto"
+                                        className="h-16 w-auto"
                                     />
                                 ) : (
-                                    <div className="h-10 w-32 rounded bg-white/10" />
+                                    <div className="h-10 w-32 rounded-xl bg-gray-100" />
                                 )}
 
                                 {(footer as any)?.brand?.tagline ? (
-                                    <p className="max-w-xs text-sm text-white/70">
+                                    <p className="max-w-sm text-sm leading-relaxed text-gray-600">
                                         {(footer as any).brand.tagline}
                                     </p>
-                                ) : null}
+                                ) : (
+                                    <p className="max-w-sm text-sm leading-relaxed text-gray-600">
+                                        Soutenir, informer et accompagner les personnes vivant avec la fibromyalgie.
+                                    </p>
+                                )}
+
+                                {/* tiny accent line */}
+                                <div className="h-[2px] w-16 rounded-full bg-[#af2511]/80" />
                             </div>
                         </div>
 
                         {/* Contact */}
                         <div className="md:col-span-4">
-                            <div className="mb-4 flex items-center gap-3">
-                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
-                                <h3 className="text-sm font-semibold text-white">
-                                    {footer?.contact?.title ?? "Nous contacter"}
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-gray-900">
+                                    {footer?.contact?.title ?? "Nous joindre"}
                                 </h3>
+                                <span className="h-6 w-6 rounded-full bg-[#af2511]/10" />
                             </div>
 
                             <div className="space-y-3">
                                 {footer?.contact?.phones?.map((phone, i) => (
-                                    <div key={i} className="flex items-center gap-3 text-sm text-white/80">
-                                        <Phone className="h-4 w-4 text-[#af2511]" />
+                                    <div key={i} className="flex items-center gap-3 text-sm text-gray-700">
+                                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#af2511]/10">
+                                            <Phone className="h-4 w-4 text-[#af2511]" />
+                                        </span>
                                         <a
                                             href={`tel:${phone.replace(/\s/g, "")}`}
-                                            className="transition-colors hover:text-[#af2511] hover:text-white"
+                                            className="font-medium hover:text-[#af2511]"
                                         >
                                             {phone}
                                         </a>
@@ -130,11 +139,13 @@ export function SiteFooter() {
                                 ))}
 
                                 {footer?.contact?.email ? (
-                                    <div className="flex items-center gap-3 text-sm text-white/80">
-                                        <Mail className="h-4 w-4 text-[#af2511]" />
+                                    <div className="flex items-center gap-3 text-sm text-gray-700">
+                                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#af2511]/10">
+                                            <Mail className="h-4 w-4 text-[#af2511]" />
+                                        </span>
                                         <a
                                             href={`mailto:${footer.contact.email}`}
-                                            className="transition-colors hover:text-[#af2511] hover:text-white"
+                                            className="font-medium hover:text-[#af2511]"
                                         >
                                             {footer.contact.email}
                                         </a>
@@ -142,11 +153,15 @@ export function SiteFooter() {
                                 ) : null}
 
                                 {footer?.contact?.addressLines?.length ? (
-                                    <div className="flex items-start gap-3 text-sm text-white/80">
-                                        <MapPin className="mt-0.5 h-4 w-4 text-[#af2511]" />
+                                    <div className="flex items-start gap-3 text-sm text-gray-700">
+                                        <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#af2511]/10">
+                                            <MapPin className="h-4 w-4 text-[#af2511]" />
+                                        </span>
                                         <div className="space-y-1">
                                             {footer.contact.addressLines.map((line, i) => (
-                                                <div key={i}>{line}</div>
+                                                <div key={i} className="leading-relaxed">
+                                                    {line}
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
@@ -154,238 +169,224 @@ export function SiteFooter() {
                             </div>
                         </div>
 
-                        {/* ✅ Search instead of "Nous suivre" */}
+                        {/* Search */}
                         <div className="md:col-span-4">
-                            <div className="mb-4 flex items-center gap-3">
-                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
-                                <h3 className="text-sm font-semibold text-white">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-gray-900">
                                     {(footer as any)?.search?.title ?? "Rechercher"}
                                 </h3>
+                                <span className="h-6 w-6 rounded-full bg-[#af2511]/10" />
                             </div>
 
                             <form onSubmit={onSearchSubmit} className="flex gap-2">
                                 <div className="relative flex-1">
-                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
                                         value={q}
                                         onChange={(e) => setQ(e.target.value)}
-                                        placeholder={(footer as any)?.search?.placeholder ?? "Trouver une page, un sujet, une ressource…"}
-                                        className="w-full rounded-lg border border-white/15 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-[#af2511]/40"
+                                        placeholder={
+                                            (footer as any)?.search?.placeholder ??
+                                            "Trouver une page, un sujet, une ressource…"
+                                        }
+                                        className="
+                    w-full rounded-2xl border border-gray-200 bg-white
+                    py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400
+                    outline-none transition
+                    focus:border-[#af2511]/50 focus:ring-4 focus:ring-[#af2511]/10
+                  "
                                     />
                                 </div>
+
                                 <button
                                     type="submit"
-                                    className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:opacity-95"
+                                    className="
+                  rounded-2xl bg-[#af2511] px-4 py-2.5 text-sm font-semibold text-white
+                  shadow-sm transition hover:opacity-95
+                "
                                 >
                                     {(footer as any)?.search?.buttonLabel ?? "OK"}
                                 </button>
                             </form>
 
-                            <p className="mt-3 text-xs text-white/50">
+                            <p className="mt-3 text-xs text-gray-500">
                                 {(footer as any)?.search?.hint ?? "Accès direct aux contenus du site."}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Main content grid */}
-                <div className="py-8">
-                    <div className="grid gap-8 md:grid-cols-12">
+                {/* MAIN GRID */}
+                <div className="mt-10 border-t border-gray-200/70 py-10">
+                    <div className="grid gap-10 md:grid-cols-12">
                         {/* Links */}
                         <div className="md:col-span-3">
-                            <div className="mb-4 flex items-center gap-3">
-                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
-                                <h3 className="text-sm font-semibold text-white">
-                                    {footer?.links?.title ?? "Liens"}
-                                </h3>
-                            </div>
-
-                            <ul className="space-y-2">
+                            <h3 className="text-sm font-semibold text-gray-900">
+                                {footer?.links?.title ?? "Liens"}
+                            </h3>
+                            <ul className="mt-4 space-y-2">
                                 {links.map((link) => (
                                     <li key={link.id} className="flex items-center gap-3">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]" />
-                                        <a
-                                            href={link.href}
-                                            className="text-sm text-white/70 transition-colors hover:text-[#af2511] hover:text-white"
-                                        >
+                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/70" />
+                                        <a href={link.href} className="text-sm text-gray-700 hover:text-[#af2511]">
                                             {link.label}
                                         </a>
                                     </li>
                                 ))}
                                 {links.length === 0 && (
-                                    <li className="flex items-center gap-3">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/30" />
-                                        <span className="text-sm text-white/50">Aucun lien</span>
-                                    </li>
+                                    <li className="text-sm text-gray-500">Aucun lien</li>
                                 )}
                             </ul>
                         </div>
 
                         {/* News */}
                         <div className="md:col-span-3">
-                            <div className="mb-4 flex items-center gap-3">
-                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
-                                <h3 className="text-sm font-semibold text-white">
-                                    {footer?.news?.title ?? "Nos Actualités"}
-                                </h3>
-                            </div>
+                            <h3 className="text-sm font-semibold text-gray-900">
+                                {footer?.news?.title ?? "Nos actualités"}
+                            </h3>
 
-                            <div className="space-y-4">
+                            <div className="mt-4 space-y-4">
                                 {news.slice(0, 2).map((item) => (
                                     <a
                                         key={item.id}
                                         href={item.href}
-                                        className="group block border-l border-[#af2511]/30 pl-2 transition-colors hover:border-[#af2511]"
+                                        className="group block rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-[#af2511]/30 hover:shadow-sm"
                                     >
-                                        <div className="mb-1 text-xs text-white/60">{item.date}</div>
-                                        <div className="text-sm text-white/80 transition-colors group-hover:text-[#af2511] group-hover:text-white">
+                                        <div className="text-xs text-gray-500">{item.date}</div>
+                                        <div className="mt-1 text-sm font-semibold text-gray-900 group-hover:text-[#af2511]">
                                             {item.title}
                                         </div>
                                     </a>
                                 ))}
-                                {news.length === 0 && (
-                                    <div className="flex items-center gap-3 border-l border-[#af2511]/30 pl-2">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-[#af2511]/30" />
-                                        <div className="text-sm text-white/50">Aucune actualité</div>
+
+                                {news.length === 0 && <div className="text-sm text-gray-500">Aucune actualité</div>}
+                            </div>
+                        </div>
+
+                        {/* Partners */}
+                        <div className="md:col-span-3">
+                            <h3 className="text-sm font-semibold text-gray-900">
+                                {(footer as any)?.partner?.financialTitle ?? "Partenaire financier"}
+                            </h3>
+
+                            <div className="mt-4">
+                                {financialPartner ? (
+                                    <a
+                                        href={(financialPartner as any).href || "#"}
+                                        target={(financialPartner as any).href ? "_blank" : undefined}
+                                        rel={(financialPartner as any).href ? "noopener noreferrer" : undefined}
+                                        className="block rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#af2511]/30 hover:shadow-md"
+                                    >
+                                        {(financialPartner as any).imageSrc ? (
+                                            <img
+                                                src={(financialPartner as any).imageSrc}
+                                                alt={(financialPartner as any).name}
+                                                className="h-24 w-full object-contain"
+                                            />
+                                        ) : (
+                                            <div className="py-10 text-center text-sm text-gray-600">
+                                                {(financialPartner as any).name}
+                                            </div>
+                                        )}
+                                    </a>
+                                ) : (
+                                    <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                                        Aucun partenaire financier
                                     </div>
                                 )}
                             </div>
-                        </div>
-
-                        {/* Partners: Financial featured + Collaborators small */}
-                        <div className="md:col-span-3">
-                            <div className="mb-4 flex items-center gap-3">
-                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
-                                <h3 className="text-sm font-semibold text-white">
-                                    {(footer as any)?.partner?.financialTitle ?? "Partenaire financier"}
-                                </h3>
-                            </div>
-
-                            {/* Featured financial partner */}
-                            {financialPartner ? (
-                                <a
-                                    href={(financialPartner as any).href || "#"}
-                                    target={(financialPartner as any).href ? "_blank" : undefined}
-                                    rel={(financialPartner as any).href ? "noopener noreferrer" : undefined}
-                                    className="block rounded-2xl bg-white p-4 shadow-sm transition hover:opacity-95"
-                                >
-                                    {(financialPartner as any).imageSrc ? (
-                                        <img
-                                            src={(financialPartner as any).imageSrc}
-                                            alt={(financialPartner as any).name}
-                                            className="h-28 w-full object-contain"
-                                        />
-                                    ) : (
-                                        <div className="py-10 text-center text-sm text-black/70">
-                                            {(financialPartner as any).name}
-                                        </div>
-                                    )}
-                                </a>
-                            ) : (
-                                <div className="rounded-2xl bg-white/5 p-4 text-sm text-white/50">
-                                    Aucun partenaire financier
-                                </div>
-                            )}
 
                             {/* Collaborators */}
-                            <div className="mt-6">
-                                <div className="mb-3 text-xs font-semibold text-white/70">
-                                    {(footer as any)?.partner?.collaboratorsTitle ?? "Collaborateurs"}
-                                </div>
+                            {collaborators.length ? (
+                                <div className="mt-6">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Collaborateurs
+                                    </p>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    {collaborators.slice(0, 4).map((p: any) => (
-                                        <a
-                                            key={p.id}
-                                            href={p.href || "#"}
-                                            target={p.href ? "_blank" : undefined}
-                                            rel={p.href ? "noopener noreferrer" : undefined}
-                                            className="flex aspect-square items-center justify-center rounded-lg border border-transparent bg-white p-2 transition hover:border-[#af2511]/30 hover:opacity-95"
-                                        >
-                                            {p.imageSrc ? (
-                                                <img
-                                                    src={p.imageSrc}
-                                                    alt={p.name}
-                                                    className="max-h-full max-w-full object-contain"
-                                                />
-                                            ) : (
-                                                <span className="text-center text-xs text-black/60">{p.name}</span>
-                                            )}
-                                        </a>
-                                    ))}
+                                    <div className="mt-3 grid grid-cols-2 gap-3">
+                                        {collaborators.slice(0, 4).map((p: any) => (
+                                            <a
+                                                key={p.id}
+                                                href={p.href || "#"}
+                                                target={p.href ? "_blank" : undefined}
+                                                rel={p.href ? "noopener noreferrer" : undefined}
+                                                className="flex aspect-square items-center justify-center rounded-2xl border border-gray-200 bg-white p-2 transition hover:border-[#af2511]/30 hover:shadow-sm"
+                                            >
+                                                {p.imageSrc ? (
+                                                    <img src={p.imageSrc} alt={p.name} className="max-h-full max-w-full object-contain" />
+                                                ) : (
+                                                    <span className="text-center text-xs text-gray-600">{p.name}</span>
+                                                )}
+                                            </a>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : null}
                         </div>
 
-                        {/* ✅ Administration */}
+                        {/* Admin */}
                         <div className="md:col-span-3">
-                            <div className="mb-4 flex items-center gap-3">
-                                <div className="h-4 w-[2px] bg-gradient-to-b from-[#af2511] to-[#d9361f]" />
-                                <h3 className="text-sm font-semibold text-white">Administration</h3>
+                            {/* <h3 className="text-sm font-semibold text-gray-900">Administration</h3> */}
+
+                            <div className="mt-4">
+                                <a
+                                    href={adminHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="
+                  inline-flex items-center gap-2 rounded-2xl
+                   border-gray-200 bg-white px-4 py-2.5
+                  text-sm font-semibold text-gray-900 shadow-sm
+                  transition hover:border-[#af2511]/30 hover:text-[#af2511]
+                "
+                                >
+                                    {adminLabel}
+                                    <ExternalLink className="h-4 w-4" />
+                                </a>
                             </div>
 
-                            <a
-                                href={adminHref}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#af2511]/30 hover:bg-[#af2511]/10 hover:text-[#af2511]"
-                            >
-                                {adminLabel}
-                                <ExternalLink className="h-4 w-4" />
-                            </a>
+                            <p className="mt-3 text-xs text-gray-500">
+                                Accès sécurisé pour la gestion du contenu.
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Bottom bar */}
-                <div className="border-t border-white/10 pt-8">
+                {/* BOTTOM BAR */}
+                <div className="border-t border-gray-200/70 py-6">
                     <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-                        <div className="text-sm text-white/60">
+                        <div className="text-sm text-gray-500">
                             © {new Date().getFullYear()} {footer?.brand?.name || "AFE"}. Tous droits réservés.
                         </div>
 
-                        <div className="flex items-center gap-4 text-sm text-white/60">
+                        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-500">
                             {footer?.bottom?.policyHref && (
-                                <a
-                                    href={footer.bottom.policyHref}
-                                    className="flex items-center gap-2 transition-colors hover:text-[#af2511] hover:text-white"
-                                >
-                                    <div className="h-1 w-1 rounded-full bg-[#af2511]" />
+                                <a href={footer.bottom.policyHref} className="hover:text-[#af2511]">
                                     {footer.bottom.policyLabel ?? "Politique de confidentialité"}
                                 </a>
                             )}
                             {footer?.bottom?.cookiesHref && (
-                                <a
-                                    href={footer.bottom.cookiesHref}
-                                    className="flex items-center gap-2 transition-colors hover:text-[#af2511] hover:text-white"
-                                >
-                                    <div className="h-1 w-1 rounded-full bg-[#af2511]" />
+                                <a href={footer.bottom.cookiesHref} className="hover:text-[#af2511]">
                                     {footer.bottom.cookiesLabel ?? "Politique de cookies"}
                                 </a>
                             )}
                             {footer?.bottom?.termsHref && (
-                                <a
-                                    href={footer.bottom.termsHref}
-                                    className="flex items-center gap-2 transition-colors hover:text-[#af2511] hover:text-white"
-                                >
-                                    <div className="h-1 w-1 rounded-full bg-[#af2511]" />
+                                <a href={footer.bottom.termsHref} className="hover:text-[#af2511]">
                                     {footer.bottom.termsLabel ?? "Conditions d'utilisation"}
                                 </a>
                             )}
                         </div>
 
-                        {footer?.bottom?.creditText && (
+                        {footer?.bottom?.creditText ? (
                             <a
                                 href="https://sherdev.com/"
-                                className="flex items-center gap-2 text-sm text-white/60 transition-colors hover:text-[#af2511] hover:text-white"
+                                className="text-sm text-gray-500 hover:text-[#af2511]"
                             >
-                                <div className="h-1 w-1 rounded-full bg-[#af2511]" />
                                 {footer.bottom.creditText}
                             </a>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div>
         </footer>
-    );
+    )
 }

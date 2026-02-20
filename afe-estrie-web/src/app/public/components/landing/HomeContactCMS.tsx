@@ -94,7 +94,7 @@ export function HomeContactMap({ home }: { home?: HomePageCMS | null }) {
 
     return (
         <section id="contact" className="bg-white">
-            <div className="mx-auto max-w-7xl px-0 py-0 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-0 sm:py-10">
                 <div className="overflow-hidden border border-gray-200 bg-white sm:rounded-2xl">
                     <div className="grid lg:grid-cols-[1fr_520px]">
                         {/* RIGHT PANEL */}

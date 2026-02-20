@@ -31,9 +31,15 @@ export function useHomePageDraft() {
         })();
     }, []);
 
+    function stableHomeForCompare(v: any) {
+        if (!v) return v;
+        const { updatedAt, updatedAtServer, ...rest } = v;
+        return rest;
+    }
+
     const dirty = useMemo(() => {
         if (!home || !draft) return false;
-        return JSON.stringify(home) !== JSON.stringify(draft);
+        return JSON.stringify(stableHomeForCompare(home)) !== JSON.stringify(stableHomeForCompare(draft));
     }, [home, draft]);
 
     const resetDraft = () => {
@@ -122,6 +128,11 @@ export function useHomePageDraft() {
                     eyebrow: (draft as any).features?.eyebrow ?? "",
                     heading: (draft as any).features?.heading ?? "",
                     subheading: (draft as any).features?.subheading ?? "",
+
+                    ctaEnabled: (draft as any).features?.ctaEnabled !== false,
+                    ctaText: (draft as any).features?.ctaText ?? "",
+                    ctaLink: (draft as any).features?.ctaLink ?? "",
+
                     items: normFeaturesItems((draft as any).features?.items),
                 } as any,
                 activities: {
@@ -176,8 +187,9 @@ export function useHomePageDraft() {
             };
 
             await saveHomePage(normalized);
-            setHome(normalized);
-            setDraft(structuredClone(normalized));
+            const fresh = await getHomePage();
+            setHome(fresh ?? normalized);
+            setDraft(structuredClone(fresh ?? normalized));
             setToast({ type: "success", msg: "✓ Page d'accueil publiée avec succès" });
             window.setTimeout(() => setToast(null), 2200);
         } catch (e) {

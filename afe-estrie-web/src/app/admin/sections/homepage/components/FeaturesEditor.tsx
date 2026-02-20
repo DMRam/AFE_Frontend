@@ -19,10 +19,10 @@ export function FeaturesEditor({
         next.length === 0
           ? "brain"
           : next.length === 1
-          ? "sleep"
-          : next.length === 2
-          ? "balance"
-          : "stairs",
+            ? "sleep"
+            : next.length === 2
+              ? "balance"
+              : "stairs",
       title: "",
       description: "",
     });
@@ -84,6 +84,50 @@ export function FeaturesEditor({
               rows={3}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="md:col-span-2">
+          <div className="mt-2 rounded-xl border border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-gray-900">CTA (bouton)</h4>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={block?.ctaEnabled !== false}
+                  onChange={(e) => onChange({ ...(block ?? {}), ctaEnabled: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600"
+                />
+                Activer
+              </label>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Texte du bouton</label>
+                <input
+                  value={block?.ctaText ?? ""}
+                  onChange={(e) => onChange({ ...(block ?? {}), ctaText: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="ex: Découvrir notre approche"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Lien</label>
+                <input
+                  value={block?.ctaLink ?? ""}
+                  onChange={(e) => onChange({ ...(block ?? {}), ctaLink: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="ex: /p/a-propos/axes ou https://..."
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Astuce: commence par <span className="font-mono">/</span> pour une page interne, ou{" "}
+                  <span className="font-mono">https://</span> pour externe.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,13 +1,11 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDocFromServer, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { HomePageCMS } from "../content/types/homePage";
 
 const HOME_DOC = doc(db, "sitePages", "home");
 
 export async function getHomePage(): Promise<HomePageCMS | null> {
-    const snap = await getDoc(HOME_DOC);
-
-    console.log("Home page data fetched:", snap.data());
+    const snap = await getDocFromServer(HOME_DOC);
     return snap.exists() ? (snap.data() as HomePageCMS) : null;
 }
 
@@ -23,7 +21,7 @@ export async function saveHomePage(data: HomePageCMS): Promise<void> {
             updatedAt: Date.now(),
             updatedAtServer: serverTimestamp(),
         },
-        { merge: true }
+        { merge: false }
     );
 }
 
@@ -171,8 +169,7 @@ export function seedHomePage(): HomePageCMS {
             enabled: true,
             heading: "Nos partenaires",
             logos: [
-                // optional starter example:
-                // { id: "p1", enabled: true, order: 1, alt: "Partenaire 1", href: "", src: "" },
+
             ],
         },
 
@@ -182,7 +179,6 @@ export function seedHomePage(): HomePageCMS {
             ctaLabel: "Voir toutes les activités",
             ctaHref: "/activites",
             items: [
-                // { id:"a1", enabled:true, order:1, title:"Atelier", description:"", href:"/activites", meta:"", date:"" }
             ],
         } as any,
 
@@ -192,16 +188,50 @@ export function seedHomePage(): HomePageCMS {
             ctaLabel: "Voir le calendrier",
             ctaHref: "/evenements",
             items: [],
+            date: "",
         } as any,
 
         resources: {
             enabled: true,
-            header: { heading: "Ressources", subheading: "Pour vous informer et vous outiller." },
+            header: {
+                heading: "Ressources",
+                subheading: "Pour vous informer et vous outiller.",
+            },
             ctaLabel: "Accéder aux ressources",
             ctaHref: "/ressources",
-            items: [],
+            items: [
+                {
+                    id: "r1",
+                    enabled: true,
+                    order: 1,
+                    title: "Guide – Comprendre la fibromyalgie",
+                    description: "Document PDF à télécharger.",
+                    href: "",
+                    meta: "PDF",
+                    filePath: "",
+                },
+                {
+                    id: "r2",
+                    enabled: true,
+                    order: 2,
+                    title: "Liste de ressources – Estrie",
+                    description: "Liens utiles et services de la région.",
+                    href: "https://",
+                    meta: "Lien",
+                    filePath: "",
+                },
+                {
+                    id: "r3",
+                    enabled: true,
+                    order: 3,
+                    title: "Conseils – Sommeil & routine",
+                    description: "Astuces et bonnes pratiques au quotidien.",
+                    href: "/ressources/sommeil-routine",
+                    meta: "Article",
+                    filePath: "",
+                },
+            ],
         } as any,
-
         news: {
             enabled: true,
             eyebrow: "Nos actualités",

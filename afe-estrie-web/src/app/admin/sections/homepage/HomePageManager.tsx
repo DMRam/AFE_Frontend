@@ -382,6 +382,7 @@ export default function HomePageManager() {
                     )}
                 </SectionCard>
 
+
                 {/* FEATURES */}
                 <SectionCard
                     title="Bloc « Symptômes » (icônes auto-dessinées)"
@@ -419,6 +420,7 @@ export default function HomePageManager() {
                             <SimpleBlockEditor
                                 title="Événements"
                                 icon="📅"
+                                kind="events"
                                 block={homepage.events}
                                 onChange={(next: any) => setDraft({ ...homepage, events: next })}
                             />
@@ -426,6 +428,7 @@ export default function HomePageManager() {
                             <SimpleBlockEditor
                                 title="Ressources"
                                 icon="📚"
+                                kind="resources"
                                 block={homepage.resources}
                                 onChange={(next: any) => setDraft({ ...homepage, resources: next })}
                             />

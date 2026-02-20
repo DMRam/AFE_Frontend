@@ -10,7 +10,8 @@ export const normItems = (items: any[] | undefined) =>
         description: it.description ?? "",
         href: it.href ?? "",
         meta: it.meta ?? "",
-        date: it.date ?? "",
+        date: String(it.date ?? ""),
+        filePath: String(it.filePath ?? ""),
     }));
 
 export const normLogos = (logos: any[] | undefined) =>

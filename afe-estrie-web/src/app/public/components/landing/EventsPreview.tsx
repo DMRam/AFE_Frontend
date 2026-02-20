@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { HomePageCMS } from "../../../../content/types/homePage";
 
 type EventCMSItem = {
@@ -6,56 +6,111 @@ type EventCMSItem = {
   enabled?: boolean;
   order?: number;
   title?: string;
-  description?: string; // <-- you already use "description" in activities/events/resources items
+  description?: string;
   href?: string;
-  meta?: string;        // optional (ex: "En ligne / Présentiel")
-  date?: string;        // optional (ISO or label)
+  meta?: string;
+  date?: string; // recommended: ISO like "2026-03-10" or "2026-03-10T18:30:00"
 };
+
+type UiEvent = {
+  id: string;
+  title: string;
+  dateRaw: string;      // original
+  dateObj: Date | null; // parsed date
+  summary: string;
+  details: string;
+  location: string;
+  href: string;
+};
+
+function parseMaybeDate(raw?: string): Date | null {
+  const s = String(raw ?? "").trim();
+  if (!s || s === "—") return null;
+
+  // Try native parse first (works for ISO)
+  const d1 = new Date(s);
+  if (!isNaN(d1.getTime())) return d1;
+
+  // Try common manual formats: dd/mm/yyyy or dd-mm-yyyy
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    const dd = Number(m[1]);
+    const mm = Number(m[2]);
+    const yyyy = Number(m[3]);
+    const d2 = new Date(yyyy, mm - 1, dd);
+    if (!isNaN(d2.getTime())) return d2;
+  }
+
+  return null;
+}
+
+function formatDateQC(d: Date): string {
+  return d.toLocaleDateString("fr-CA", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function splitDateParts(d: Date) {
+  return {
+    day: d.getDate(),
+    month: d.toLocaleDateString("fr-CA", { month: "short" }), // ex: "mars"
+  };
+}
 
 export function EventsPreview({ home }: { home?: HomePageCMS | null }) {
   const block = home?.events;
 
-  // If events block is disabled in CMS, don't render
   if (block?.enabled === false) return null;
 
   const heading = block?.header?.heading ?? "Événements";
   const subheading = block?.header?.subheading ?? "Prochains événements.";
-
   const ctaLabel = block?.ctaLabel ?? "Voir le calendrier";
   const ctaHref = block?.ctaHref ?? "/evenements";
 
-  const items = useMemo(() => {
+  const items = useMemo<UiEvent[]>(() => {
     const raw = ((block as any)?.items ?? []) as EventCMSItem[];
 
     return raw
       .filter((x) => x?.enabled !== false)
       .slice()
       .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
-      .map((it) => ({
-        id: it.id || `${it.title || "event"}-${it.order ?? 0}`,
-        title: it.title ?? "",
-        // "date" in your DB is currently a string (can be empty). Use it if present, else fallback.
-        dateLabel: (it.date && it.date.trim()) ? it.date : "—",
-        summary: it.description ?? "",
-        details: it.description ?? "", // if later you want separate fields, split it
-        location: it.meta ?? "",       // use meta as location label (nice reuse)
-        href: it.href ?? "#",
-      }));
+      .map((it) => {
+        const dateRaw = String(it.date ?? "").trim();
+        const dateObj = parseMaybeDate(dateRaw);
+
+        return {
+          id: it.id || `${it.title || "event"}-${it.order ?? 0}`,
+          title: it.title ?? "",
+          dateRaw,
+          dateObj,
+          summary: it.description ?? "",
+          details: it.description ?? "",
+          location: it.meta ?? "",
+          href: it.href ?? "#",
+        };
+      });
   }, [block]);
 
-  // Open first item if exists, else none
   const [openIndex, setOpenIndex] = useState<number | null>(items.length ? 0 : null);
 
-  // If items list changes length, keep state safe
-  const safeOpenIndex = openIndex != null && openIndex < items.length ? openIndex : null;
+  // Keep openIndex valid if items change
+  useEffect(() => {
+    setOpenIndex((prev) => {
+      if (items.length === 0) return null;
+      if (prev == null) return 0;
+      if (prev >= items.length) return 0;
+      return prev;
+    });
+  }, [items.length]);
 
-  const toggle = (idx: number) => {
-    setOpenIndex((prev) => (prev === idx ? null : idx));
-  };
+  const toggle = (idx: number) => setOpenIndex((prev) => (prev === idx ? null : idx));
 
   return (
     <section className="bg-gray-50 py-16" id="evenements">
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
         <p className="text-sm font-semibold text-red-700">{heading}</p>
 
         <div className="mt-2 flex items-end justify-between gap-4">
@@ -64,11 +119,10 @@ export function EventsPreview({ home }: { home?: HomePageCMS | null }) {
             <p className="mt-2 text-sm text-gray-600">{subheading}</p>
           </div>
 
-          {/* Optional top CTA */}
           {ctaLabel && ctaHref ? (
             <a
               href={ctaHref}
-              className="hidden shrink-0 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100 sm:inline-flex"
+              className="hidden shrink-0 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-100 sm:inline-flex"
             >
               {ctaLabel}
             </a>
@@ -90,72 +144,140 @@ export function EventsPreview({ home }: { home?: HomePageCMS | null }) {
             </div>
           ) : (
             items.map((it, idx) => {
-              const isOpen = safeOpenIndex === idx;
+              const isOpen = openIndex === idx;
+              const parts = it.dateObj ? splitDateParts(it.dateObj) : null;
 
               return (
-                <div key={it.id} className={idx !== 0 ? "border-t border-gray-200" : ""}>
-                  {/* HEADER */}
+                <div key={it.id} className={idx !== 0 ? "border-t border-gray-100" : ""}>
+                  {/* HEADER BUTTON */}
                   <button
                     type="button"
                     onClick={() => toggle(idx)}
-                    className={`flex w-full items-center justify-between gap-4 p-5 text-left transition ${isOpen ? "bg-gray-50" : "bg-white hover:bg-gray-50/70"
-                      }`}
+                    className={[
+                      "group flex w-full items-center justify-between gap-6 px-6 py-5 text-left",
+                      "transition-all duration-200",
+                      "cursor-pointer",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40",
+                      isOpen
+                        ? "bg-white"
+                        : "bg-white hover:bg-gray-50",
+                    ].join(" ")}
                     aria-expanded={isOpen}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="min-w-20 rounded-xl bg-red-50 px-3 py-2 text-center">
-                        <p className="text-xs font-semibold text-red-700">Date</p>
-                        <p className="text-sm font-extrabold text-red-700">{it.dateLabel}</p>
+                    <div className="flex items-center gap-5">
+                      {/* DATE BADGE */}
+                      <div
+                        className={[
+                          "flex min-w-[72px] flex-col items-center justify-center rounded-2xl px-3 py-3 shadow-sm",
+                          parts ? "bg-red-600 text-white" : "bg-gray-100 text-gray-700",
+                          // soft hover to show clickable
+                          "transition-transform duration-200 group-hover:-translate-y-0.5",
+                        ].join(" ")}
+                      >
+                        {parts ? (
+                          <>
+                            <span className="text-xs uppercase tracking-wide opacity-90">
+                              {parts.month}
+                            </span>
+                            <span className="text-xl font-extrabold leading-none">
+                              {parts.day}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
+                              À venir
+                            </span>
+                            <span className="text-xs font-bold">—</span>
+                          </>
+                        )}
                       </div>
 
-                      <div>
-                        <p className="text-base font-bold text-gray-900">{it.title}</p>
-                        <p className="text-sm text-gray-600 line-clamp-2">{it.summary}</p>
+                      {/* TEXT */}
+                      <div className="min-w-0">
+                        <p className="text-lg font-bold text-gray-900">
+                          {it.title || "Événement"}
+                        </p>
+
+                        {it.summary ? (
+                          <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                            {it.summary}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-sm text-gray-500">
+                            Cliquez pour voir les détails
+                          </p>
+                        )}
+
+                        {/* subtle hover hint */}
+                        <p className="mt-1 hidden text-xs text-gray-500 group-hover:block">
+                          Cliquez pour {isOpen ? "réduire" : "déployer"}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Chevron soft */}
+                    {/* Chevron */}
                     <span
-                      className={`ml-4 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-transform duration-300 ${isOpen ? "rotate-180" : ""
-                        }`}
+                      className={[
+                        "inline-flex h-10 w-10 items-center justify-center rounded-xl",
+                        "border border-gray-200 bg-white text-gray-600 shadow-sm",
+                        "transition-all duration-200",
+                        isOpen ? "rotate-180" : "",
+                        "group-hover:border-gray-300 group-hover:shadow",
+                      ].join(" ")}
                       aria-hidden="true"
                     >
                       ▾
                     </span>
                   </button>
 
-                  {/* SOFT COLLAPSE */}
+                  {/* COLLAPSE */}
                   <div
-                    className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                      }`}
+                    className={[
+                      "grid transition-[grid-template-rows] duration-300 ease-out",
+                      isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                    ].join(" ")}
                   >
                     <div className="overflow-hidden">
-                      <div
-                        className={`px-5 pb-6 transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"
-                          }`}
-                      >
-                        <div className="rounded-xl border border-gray-200 bg-white p-4">
-                          {it.location ? (
+                      <div className="px-6 pb-6">
+                        <div className="rounded-2xl bg-gray-50 p-5">
+                          {/* FULL DATE line */}
+                          {it.dateObj ? (
                             <p className="text-sm font-semibold text-gray-900">
-                              Lieu: <span className="font-normal text-gray-700">{it.location}</span>
+                              🗓️ Date :{" "}
+                              <span className="font-normal text-gray-700">
+                                {formatDateQC(it.dateObj)}
+                              </span>
+                            </p>
+                          ) : null}
+
+                          {it.location ? (
+                            <p className="mt-2 text-sm font-semibold text-gray-900">
+                              📍 Lieu :{" "}
+                              <span className="font-normal text-gray-700">
+                                {it.location}
+                              </span>
                             </p>
                           ) : null}
 
                           {it.details ? (
-                            <p className="mt-2 text-sm leading-relaxed text-gray-700">{it.details}</p>
+                            <p className="mt-3 text-sm leading-relaxed text-gray-700">
+                              {it.details}
+                            </p>
                           ) : null}
 
-                          <div className="mt-4 flex flex-wrap gap-3">
+                          <div className="mt-5 flex flex-wrap gap-3">
                             <a
                               href={it.href || "#"}
-                              className="inline-flex items-center justify-center rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                              className="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700"
                             >
                               Voir les détails
                             </a>
+
                             <button
                               type="button"
-                              className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-100"
                               onClick={() => toggle(idx)}
+                              className="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-100"
                             >
                               Fermer
                             </button>
@@ -164,19 +286,17 @@ export function EventsPreview({ home }: { home?: HomePageCMS | null }) {
                       </div>
                     </div>
                   </div>
-                  {/* end collapse */}
                 </div>
               );
             })
           )}
         </div>
 
-        {/* Mobile CTA */}
         {ctaLabel && ctaHref ? (
           <div className="mt-6 sm:hidden">
             <a
               href={ctaHref}
-              className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-100"
             >
               {ctaLabel}
             </a>

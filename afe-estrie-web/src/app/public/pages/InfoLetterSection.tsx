@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const AFE_RED = "#b33a22";
+
 export function InfoLetterSection() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -34,101 +36,126 @@ export function InfoLetterSection() {
     };
 
     return (
-        <section className="relative overflow-hidden bg-gradient-to-br from-red-50 via-white to-red-50 py-16">
-            {/* Decorative background - subtle */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-red-100/30 blur-3xl" />
-                <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-red-100/30 blur-3xl" />
-            </div>
+        <section className="relative overflow-hidden py-10 sm:py-12">
+            {/* background */}
 
-            <div className="mx-auto max-w-7xl px-4 sm:px-6">
-                <div className="grid items-center gap-6 md:grid-cols-12 md:gap-4">
+            <div className="relative mx-auto max-w-screen-3xl px-4 sm:px-6 lg:px-8">
+                <div
+                    className={[
+                        "relative overflow-hidden rounded-[28px]  bg-white/80 backdrop-blur",
+                        "shadow-[0_24px_80px_-45px_rgba(0,0,0,0.35)]",
+                        "ring-1 ring-black/5",
+                    ].join(" ")}
+                >
+                    <div
+                        className="absolute inset-x-0 top-0 h-1"
+                        style={{
+                            background: `linear-gradient(90deg, ${AFE_RED}, ${AFE_RED}AA, transparent)`,
+                        }}
+                    />
 
-                    {/* LEFT IMAGE - subtle */}
-                    <div className="hidden md:col-span-3 md:block">
-                        <div className="opacity-80 hover:opacity-100 transition-opacity">
-                            <NewsletterLeft />
-                        </div>
-                    </div>
-
-                    {/* CONTENT */}
-                    <div className="md:col-span-6 text-center">
-                        <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-                            Abonnez-vous à notre
-                            <span className="block text-red-700 mt-1">infolettre</span>
-                        </h2>
-
-                        <p className="mt-4 text-gray-600 max-w-lg mx-auto">
-                            Recevez nos actualités, événements et ressources pour mieux vivre avec la fibromyalgie.
-                        </p>
-
-                        {isSuccess && (
-                            <div className="mt-4 rounded-lg bg-emerald-50 p-3 text-emerald-700 text-sm border border-emerald-200">
-                                ✓ Merci ! Votre inscription est confirmée.
+                    {/* ✅ tighter + better split */}
+                    <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-[420px_1fr] lg:gap-10 lg:p-10">
+                        {/* LEFT illustration: bigger + fills */}
+                        <div className="flex justify-center lg:justify-start">
+                            <div className="w-full max-w-[420px] lg:max-w-none lg:w-[420px]">
+                                <PremiumNewsletterIllustration />
                             </div>
-                        )}
+                        </div>
 
-                        <form onSubmit={handleSubmit} className="mt-6">
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <div className="relative flex-1">
-                                    <input
-                                        type="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="votre@courriel.com"
-                                        className="
-                                            w-full rounded-lg border border-gray-300 
-                                            pl-10 pr-4 py-3 text-sm
-                                            focus:border-red-500 focus:ring-2 focus:ring-red-100 
-                                            outline-none transition
-                                        "
-                                    />
-                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
+                        {/* RIGHT content: cap width so it doesn’t feel empty */}
+                        <div className="w-full max-w-[760px]">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                                    style={{ background: `${AFE_RED}14`, color: AFE_RED }}
+                                >
+                                    Infolettre AFE Estrie
+                                </span>
+                                <span className="text-xs text-gray-500">1 à 2 envois par mois</span>
+                            </div>
+
+                            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                                Abonnez-vous à notre infolettre.
+                            </h2>
+
+                            <p className="mt-3 text-base leading-relaxed text-gray-600">
+                                Recevez nos activités, événements, ressources et nouveautés — directement dans
+                                votre boîte courriel.
+                            </p>
+
+                            {isSuccess && (
+                                <div className="mt-5 rounded-2xl border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                    ✓ Merci ! Votre inscription est confirmée.
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSubmit} className="mt-6">
+                                {/* ✅ input row: consistent height, less dead space */}
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                                    <div className="relative flex-1">
+                                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
+                                            <MailIcon />
+                                        </span>
+
+                                        <input
+                                            type="email"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="votre@courriel.com"
+                                            className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:ring-4"
+                                            onFocus={(e) => {
+                                                e.currentTarget.style.borderColor = AFE_RED;
+                                                e.currentTarget.style.boxShadow = `0 0 0 6px ${AFE_RED}1F`;
+                                            }}
+                                            onBlur={(e) => {
+                                                e.currentTarget.style.borderColor = "#d1d5db";
+                                                e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
+                                            }}
+                                        />
                                     </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed sm:min-w-[170px]"
+                                        style={{ background: AFE_RED }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.background = "#992f1b")}
+                                        onMouseLeave={(e) => (e.currentTarget.style.background = AFE_RED)}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <Spinner />
+                                                <span>Inscription…</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span>S’abonner</span>
+                                                <span className="opacity-90">→</span>
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="
-                                        inline-flex items-center justify-center gap-2
-                                        rounded-lg bg-red-700 px-5 py-3 text-sm font-medium text-white
-                                        hover:bg-red-800 transition
-                                        disabled:opacity-50 disabled:cursor-not-allowed
-                                        whitespace-nowrap
-                                    "
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                            </svg>
-                                            <span>Inscription...</span>
-                                        </>
-                                    ) : (
-                                        "S'abonner"
-                                    )}
-                                </button>
-                            </div>
-                        </form>
+                                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
+                                    <span className="inline-flex items-center gap-2">
+                                        <span aria-hidden>🔒</span>
+                                        On ne partage jamais votre courriel.
+                                    </span>
+                                    <a
+                                        href="/confidentialite"
+                                        className="font-semibold hover:underline"
+                                        style={{ color: AFE_RED }}
+                                    >
+                                        Politique de confidentialité
+                                    </a>
+                                </div>
+                            </form>
 
-                        <p className="mt-4 text-xs text-gray-500">
-                            Nous ne partageons jamais vos informations.
-                            <a href="/confidentialite" className="text-red-700 hover:underline ml-1">
-                                Politique de confidentialité
-                            </a>
-                        </p>
-                    </div>
-
-                    {/* RIGHT IMAGE - subtle */}
-                    <div className="hidden md:col-span-3 md:block">
-                        <div className="opacity-80 hover:opacity-100 transition-opacity">
-                            <NewsletterRight />
+                            <p className="mt-3 text-xs text-gray-400">
+                                Vous pouvez vous désabonner en tout temps.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -137,28 +164,91 @@ export function InfoLetterSection() {
     );
 }
 
-function NewsletterLeft() {
+/** Cleaner, more “designed” illustration */
+function PremiumNewsletterIllustration() {
     return (
-        <svg viewBox="0 0 200 200" className="w-full h-auto">
-            <rect x="30" y="60" width="140" height="90" rx="8" fill="#ffffff" stroke="#e5e7eb" strokeWidth="1.5" />
-            <rect x="45" y="72" width="110" height="55" rx="6" fill="#fee2e2" />
-            <path d="M45 72 L100 107 L155 72" stroke="#ef4444" strokeWidth="2" fill="none" />
-            <circle cx="55" cy="45" r="10" fill="#fecaca" />
-            <circle cx="95" cy="35" r="7" fill="#fde68a" />
-            <circle cx="145" cy="40" r="8" fill="#bfdbfe" />
+        <svg viewBox="0 0 560 420" className="h-auto w-full">
+            {/* shadow */}
+            <ellipse cx="260" cy="370" rx="200" ry="26" fill="#000" opacity="0.06" />
+
+            {/* back card */}
+            <g>
+                <rect x="180" y="70" width="320" height="230" rx="28" fill="#fff" stroke="#e5e7eb" strokeWidth="2" />
+                <rect x="212" y="110" width="256" height="18" rx="9" fill="#f3f4f6" />
+                <rect x="212" y="142" width="210" height="14" rx="7" fill="#f3f4f6" />
+                <rect x="212" y="168" width="238" height="14" rx="7" fill="#f3f4f6" />
+                <rect x="212" y="194" width="170" height="14" rx="7" fill="#f3f4f6" />
+
+                {/* badge */}
+                <rect x="212" y="228" width="132" height="36" rx="18" fill={AFE_RED} opacity="0.12" />
+                <text
+                    x="278"
+                    y="252"
+                    textAnchor="middle"
+                    fontSize="12"
+                    fontWeight="800"
+                    fill={AFE_RED}
+                    fontFamily="ui-sans-serif, system-ui"
+                >
+                    NOUVEAUTÉS
+                </text>
+            </g>
+
+            {/* front envelope */}
+            <g>
+                <rect x="70" y="140" width="240" height="170" rx="26" fill="#fff" stroke="#e5e7eb" strokeWidth="2" />
+                <path d="M70 165 L190 250 L310 165" fill="none" stroke={AFE_RED} strokeWidth="3.2" />
+                <path d="M70 310 L150 240" fill="none" stroke="#e5e7eb" strokeWidth="2" />
+                <path d="M310 310 L230 240" fill="none" stroke="#e5e7eb" strokeWidth="2" />
+
+                {/* message lines */}
+                <rect x="95" y="190" width="190" height="18" rx="9" fill={AFE_RED} opacity="0.10" />
+                <rect x="95" y="216" width="150" height="14" rx="7" fill="#f3f4f6" />
+                <rect x="95" y="238" width="170" height="14" rx="7" fill="#f3f4f6" />
+            </g>
+
+            {/* floating accents */}
+            <circle cx="470" cy="110" r="16" fill={AFE_RED} opacity="0.16" />
+            <circle cx="505" cy="145" r="10" fill="#f59e0b" opacity="0.28" />
+            <circle cx="470" cy="190" r="12" fill="#60a5fa" opacity="0.20" />
+
+            {/* tiny sparkles */}
+            <g opacity="0.35" fill={AFE_RED}>
+                <path d="M352 86l4 10 10 4-10 4-4 10-4-10-10-4 10-4 4-10z" />
+                <path d="M410 300l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z" />
+            </g>
         </svg>
     );
 }
 
-function NewsletterRight() {
+function MailIcon() {
     return (
-        <svg viewBox="0 0 200 200" className="w-full h-auto">
-            <rect x="30" y="70" width="140" height="80" rx="8" fill="#ffffff" stroke="#e5e7eb" strokeWidth="1.5" />
-            <path d="M30 70 L100 120 L170 70" stroke="#ef4444" strokeWidth="2" fill="none" />
-            <rect x="60" y="45" width="80" height="35" rx="6" fill="#fde68a" />
-            <path d="M60 45 L100 65 L140 45" stroke="#f59e0b" strokeWidth="1.5" fill="none" />
-            <circle cx="140" cy="55" r="7" fill="#fecaca" />
-            <circle cx="45" cy="100" r="7" fill="#bfdbfe" />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+                d="M4 6h16v12H4V6Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M4 7l8 6 8-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
+function Spinner() {
+    return (
+        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
         </svg>
     );
 }

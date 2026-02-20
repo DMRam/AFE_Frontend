@@ -1,7 +1,7 @@
 export function NewsletterCTA() {
     return (
         <section className="py-16" id="membre">
-            <div className="mx-auto max-w-7xl px-6">
+           <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
                 <div className="overflow-hidden rounded-3xl border border-red-700/10 bg-gradient-to-br from-red-700 to-red-800 text-white shadow-sm">
                     <div className="grid gap-8 p-8 md:grid-cols-2 md:items-center md:p-10">
                         <div>

@@ -10,16 +10,40 @@ import { getHomePage, seedHomePage, saveHomePage } from "../../../services/homeP
 import { AutoDrawFeatures } from "../components/landing/AutoDrawFeatures";
 import { NewsPreview } from "../components/landing/NewsPreview";
 import { HomeContactMap } from "../components/landing/HomeContactCMS";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../../services/firebase";
+import { EventsPreview } from "../components/landing/EventsPreview";
+import { ResourcesPreview } from "../components/landing/ResourcesPreview";
 
 export default function Landing() {
   const [home, setHome] = useState<HomePageCMS | null>(null);
   const [initializing, setInitializing] = useState(false);
 
+  const HOME_DOC = doc(db, "sitePages", "home");
+
+
   useEffect(() => {
-    (async () => {
-      const data = await getHomePage();
-      setHome(data); // IMPORTANT: no fallback here
-    })();
+    const unsub = onSnapshot(
+      HOME_DOC,
+      { includeMetadataChanges: true },
+      (snap) => {
+        if (!snap.exists()) {
+          setHome(null);
+          return;
+        }
+
+        const data = snap.data() as HomePageCMS;
+
+        console.log("Landing home updated. fromCache:", snap.metadata.fromCache);
+
+        setHome(data);
+      },
+      (err) => {
+        console.error("Landing onSnapshot error:", err);
+      }
+    );
+
+    return () => unsub();
   }, []);
 
   // ONE-TIME initializer (only when doc missing)
@@ -132,11 +156,21 @@ export default function Landing() {
         />
       )}
 
+      {home.resources?.enabled && (
+        <ResourcesPreview home={home} />
+      )}
+
+      {home.events?.enabled && (
+        <EventsPreview
+          home={home}
+        />
+      )}
+
       <NewsPreview home={home} />
 
       <HomeContactMap home={home} />
 
-      
+
 
 
     </>

@@ -248,7 +248,7 @@ export function PartnersStrip({ home }: { home?: HomePageCMS | null }) {
           setIsAnimating(false);
         }, 50);
       }
-    }, 400); // Wait for slide out to complete
+    }, 400);
   };
 
   // Don't show navigation if there's only one page
@@ -256,7 +256,7 @@ export function PartnersStrip({ home }: { home?: HomePageCMS | null }) {
 
   return (
     <section id="partenaires" className="bg-white py-16">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 max-w-3xl">
           <h2 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
@@ -308,11 +308,8 @@ export function PartnersStrip({ home }: { home?: HomePageCMS | null }) {
           {/* Logos container with slide animation and fixed height */}
           <div
             ref={outerContainerRef}
-            className="rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden transition-all duration-700 ease-in-out"
-            style={{
-              height: containerHeight ? `${containerHeight}px` : 'auto',
-              padding: '2.5rem 3rem' // 40px vertical, 48px horizontal
-            }}
+            className="rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden transition-all duration-700 ease-in-out p-6 sm:p-8 lg:p-10"
+            style={{ height: containerHeight ? `${containerHeight}px` : "auto" }}
           >
             <div
               ref={containerRef}

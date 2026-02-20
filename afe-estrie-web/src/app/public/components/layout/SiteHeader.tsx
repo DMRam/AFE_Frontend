@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import logoFooter from "../../../../assets/logo/logo-footer.png";
+import logoFooter from "../../../../assets/logo/logo.png";
 import { Heart, UserPlus } from "lucide-react";
 import { MemberModal } from "../../../../components/modals/MemberModal";
 import { useNavigation } from "../../../../hooks/useNavigation";
@@ -155,18 +155,13 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 bg-white">
       {/* DESKTOP: el header visual va en <SiteNav /> */}
-      {/* MOBILE: dejamos una barra simple con logo + boton */}
       <div className="min-[1570px]:hidden border-b bg-white">
 
 
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <a href="#" className="flex items-center gap-3">
-            <img src={logoFooter} alt="AFE" className="h-12 object-contain" />
-            <div className="leading-tight">
-              <p className="text-sm uppercase tracking-wide text-gray-500">Association de la</p>
-              <p className="text-xl font-semibold text-red-700">Fibromyalgie</p>
-              <p className="text-sm uppercase tracking-wide text-gray-500">de l’Estrie</p>
-            </div>
+            <img src={logoFooter} alt="AFE" className="h-16 object-contain" />
+            
           </a>
 
           <button
