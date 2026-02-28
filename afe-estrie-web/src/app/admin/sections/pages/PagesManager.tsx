@@ -6,12 +6,12 @@ import type { PageDocExt, AnySection, CategoryOption } from "./types";
 import { Save, CheckCircle2, XCircle } from "lucide-react";
 
 
-import SectionEditModal from "./components/SectionEditModal";
 import { listPages, pageDocIdFromPageId, getPageByDocId, patchPage, removePage } from "../../../../services/pageRepo";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { PageDetailsForm } from "./components/PageDetailsForm";
 import { PagesSidebar } from "./components/PagesSidebar";
 import { SectionsEditor } from "./components/SectionsEditor";
+import { SectionEditModal } from "./components/SectionEditModal";
 
 function s(v: any) {
     return String(v ?? "").trim();

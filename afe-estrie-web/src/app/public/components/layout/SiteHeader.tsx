@@ -155,13 +155,11 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 bg-white">
       {/* DESKTOP: el header visual va en <SiteNav /> */}
-      <div className="min-[1570px]:hidden border-b bg-white">
-
-
+      <div className="xl:hidden border-b bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <a href="#" className="flex items-center gap-3">
             <img src={logoFooter} alt="AFE" className="h-16 object-contain" />
-            
+
           </a>
 
           <button
@@ -177,7 +175,7 @@ export function SiteHeader() {
 
       {/* MOBILE DRAWER (tu código igual) */}
       {drawerOpen && (
-        <div className="min-[1570px]:hidden">
+        <div className="xl:hidden">
           {/* Backdrop */}
           <button
             aria-label="Fermer"

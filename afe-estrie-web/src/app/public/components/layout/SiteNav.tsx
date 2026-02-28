@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useNavigation } from "../../../../hooks/useNavigation";
 import type { NavNode } from "../../../../content/types/navTypes";
-import { ChevronDown, ExternalLink, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronDown, ExternalLink, ChevronRight, Loader2, Search } from "lucide-react";
 import { usePreferredReducedMotion } from "../../../../hooks/usePreferredReduceMotion";
 import { useClickOutside } from "../../../../hooks/useClickOutside";
 import { useFocusTrap } from "../../../../hooks/useFocusTrap";
@@ -92,6 +92,21 @@ export function SiteNav() {
 
     const [_isStuck, setIsStuck] = useState(false);
 
+    const SEARCH_PATH = "/recherche";
+
+    function s(v: any) {
+        return String(v ?? "").trim();
+    }
+
+    const [q, setQ] = useState("");
+
+    const onSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const query = s(q);
+        if (!query) return;
+        window.location.href = `${SEARCH_PATH}?q=${encodeURIComponent(query)}`;
+    };
+
 
     const donateCta = {
         enabled: home?.headerCtas?.donate?.enabled !== false,
@@ -115,11 +130,11 @@ export function SiteNav() {
     };
 
     useEffect(() => {
-  const onScroll = () => setIsStuck(window.scrollY > 4);
-  onScroll();
-  window.addEventListener("scroll", onScroll, { passive: true });
-  return () => window.removeEventListener("scroll", onScroll);
-}, []);
+        const onScroll = () => setIsStuck(window.scrollY > 4);
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
 
     // mobile breakpoint
     useEffect(() => {
@@ -219,7 +234,7 @@ export function SiteNav() {
 
             <nav
                 ref={navRef}
-                className="hidden min-[1570px]:block shadow-lg sticky top-0 z-50 bg-transparent backdrop-blur-sm"
+                className="hidden xl:block shadow-lg sticky top-0 z-50 bg-transparent backdrop-blur-sm"
                 aria-label="Main navigation"
             >
                 <div
@@ -243,14 +258,14 @@ export function SiteNav() {
                     {/* ===== ROW 1: TOP BAR ===== */}
                     <div className="bg-white border-b border-gray-100">
                         <div className="px-3 lg:px-6">
-                            <div className="flex items-center justify-between gap-3 py-4">
+                            <div className="flex items-center justify-between gap-4 py-4">
                                 {/* Left: phone/email */}
                                 <div className="min-w-0 flex items-center gap-4 text-sm font-semibold text-gray-700">
                                     <a
-                                        href="tel:+1819XXXXXXX"
+                                        href="tel:(+1) 819 566-1067"
                                         className="inline-flex items-center gap-2 hover:text-[#b33a22] transition"
                                     >
-                                        <span className="whitespace-nowrap">📞 +1 (819) XXX-XXXX</span>
+                                        <span className="whitespace-nowrap">📞 +1 (819) 566-1067</span>
                                     </a>
 
                                     <span className="hidden lg:inline text-gray-300">|</span>
@@ -259,8 +274,38 @@ export function SiteNav() {
                                         href="mailto:info@afe-estrie.org"
                                         className="hidden lg:inline hover:text-[#b33a22] transition truncate"
                                     >
-                                        info@afe-estrie.org
+                                        info@fibromyalgie.ca
                                     </a>
+                                </div>
+
+                                {/* Center: Search (lupa) */}
+                                <div className="hidden lg:block flex-1 max-w-[520px]">
+                                    <form onSubmit={onSearchSubmit} className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                            <input
+                                                value={q}
+                                                onChange={(e) => setQ(e.target.value)}
+                                                placeholder="Trouver une page, un sujet, une ressource…"
+                                                className="
+            w-full rounded-2xl border border-gray-200 bg-white
+            py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400
+            outline-none transition
+            focus:border-[#af2511]/50 focus:ring-4 focus:ring-[#af2511]/10
+          "
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            className="
+          rounded-2xl bg-[#af2511] px-4 py-2.5 text-sm font-semibold text-white
+          shadow-sm transition hover:opacity-95
+        "
+                                        >
+                                            OK
+                                        </button>
+                                    </form>
                                 </div>
 
                                 {/* Right: CTAs */}
@@ -275,10 +320,10 @@ export function SiteNav() {
                                                 }
                                             }}
                                             className="
-                  inline-flex items-center gap-2 rounded-full bg-[#b33a22]
-                  px-3 py-2 text-sm font-extrabold text-white
-                  shadow-sm hover:opacity-95 transition
-                "
+          inline-flex items-center gap-2 rounded-full bg-[#b33a22]
+          px-3 py-2 text-sm font-extrabold text-white
+          shadow-sm hover:opacity-95 transition
+        "
                                         >
                                             <Heart className="h-4 w-4" />
                                             <span className="hidden xl:inline">{donateCta.label}</span>
@@ -290,10 +335,10 @@ export function SiteNav() {
                                             type="button"
                                             onClick={openMember}
                                             className="
-                  inline-flex items-center gap-2 rounded-full bg-[#8f2c19]
-                  px-3 py-2 text-sm font-extrabold text-white
-                  shadow-sm hover:opacity-95 transition
-                "
+          inline-flex items-center gap-2 rounded-full bg-[#8f2c19]
+          px-3 py-2 text-sm font-extrabold text-white
+          shadow-sm hover:opacity-95 transition
+        "
                                         >
                                             <UserPlus className="h-4 w-4" />
                                             <span className="hidden xl:inline">{memberCta.label}</span>
@@ -301,6 +346,8 @@ export function SiteNav() {
                                     )}
                                 </div>
                             </div>
+
+
                         </div>
                     </div>
 

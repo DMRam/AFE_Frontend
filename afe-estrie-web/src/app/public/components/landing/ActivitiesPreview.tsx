@@ -9,7 +9,6 @@ export function ActivitiesPreview({ home }: { home?: HomePageCMS | null }) {
   const ctaLabel = block.ctaLabel ?? "Voir tout →";
   const ctaHref = block.ctaHref ?? "#";
 
-  // future-proof: if later you add `items`, it will use them automatically
   const items = (block as any).items ?? [];
 
   return (

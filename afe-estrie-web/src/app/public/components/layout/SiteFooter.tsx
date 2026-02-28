@@ -10,7 +10,7 @@ import type { FooterCMS } from "../../../../content/types/footer";
 import { getFooter } from "../../../../services/footerRepo";
 
 const FALLBACK_ADMIN_URL = "https://afe-sherdev.web.app/admin/login";
-const SEARCH_PATH = "/recherche"; // <-- cambia a "/search" o la ruta real si quieres
+const SEARCH_PATH = "/recherche"; 
 
 function s(v: any) {
     return String(v ?? "").trim();

@@ -1,6 +1,7 @@
 import type { SplitTextImageSection } from "../../../content/types/pageBlocks";
 import { useMemo } from "react";
 import { ChevronRight, ExternalLink } from "lucide-react";
+import DOMPurify from "dompurify";
 
 type CtaVariant = "primary" | "secondary" | "outline";
 type CtaSize = "sm" | "md" | "lg";
@@ -129,6 +130,23 @@ function normalizeCtas(input: any): Array<{
         .slice(0, 3);
 }
 
+function looksLikeHtml(s: string) {
+    const t = (s || "").trim();
+    return t.startsWith("<") && /<\/?[a-z][\s\S]*>/i.test(t);
+}
+
+function imageFigureClass(size?: "sm" | "md" | "lg") {
+    switch (size) {
+        case "sm":
+            return "max-w-[420px]";
+        case "lg":
+            return "max-w-[760px]";
+        case "md":
+        default:
+            return "max-w-[580px]";
+    }
+}
+
 export function SplitTextImageSectionView({ data }: SplitTextImageSectionViewProps) {
     if ((data as any).enabled === false) return null;
 
@@ -163,12 +181,25 @@ export function SplitTextImageSectionView({ data }: SplitTextImageSectionViewPro
             className="scroll-mt-28"
             aria-labelledby={data.title ? `${sectionId}-title` : undefined}
         >
-            <div className="grid items-center gap-10 lg:gap-14 md:grid-cols-2">
+
+            <div className="grid items-center gap-8 lg:gap-10 md:grid-cols-2">
 
                 {/* Image */}
                 {data.imageUrl && (
                     <div className={containerClasses}>
-                        <figure className="relative w-full max-w-lg lg:max-w-xl">
+
+                        <figure
+                            className={[
+                                "relative w-full",
+                                "mx-auto md:mx-0",
+                                imageFigureClass((data as any).imageSize),
+                            ].join(" ")}
+                            style={
+                                typeof (data as any).imageMaxWidth === "number"
+                                    ? { maxWidth: `${(data as any).imageMaxWidth}px` }
+                                    : undefined
+                            }
+                        >
 
                             <img
                                 src={data.imageUrl}
@@ -217,16 +248,33 @@ export function SplitTextImageSectionView({ data }: SplitTextImageSectionViewPro
                     )}
 
                     <div className="mt-6 space-y-4">
-                        {body && (
-                            <p
-                                className={[
-                                    "text-base md:text-lg leading-relaxed whitespace-pre-line",
-                                    textColorClass(data.textColorPreset ?? "auto"),
-                                ].join(" ")}
-                            >
-                                {body}
-                            </p>
-                        )}
+                        {body ? (
+                            looksLikeHtml(body) ? (
+                                <div
+                                    className={[
+                                        "text-base md:text-lg leading-relaxed",
+                                        textColorClass(data.textColorPreset ?? "auto"),
+
+                                        "[&_p]:my-3 [&_p:first-child]:mt-0",
+                                        "[&_ul]:my-4 [&_ul]:pl-6 [&_ul]:list-disc",
+                                        "[&_ol]:my-4 [&_ol]:pl-6 [&_ol]:list-decimal",
+                                        "[&_li]:my-1",
+                                        "[&_a]:text-red-700 [&_a]:underline hover:[&_a]:text-red-800",
+                                        "[&_strong]:font-semibold",
+                                    ].join(" ")}
+                                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(body) }}
+                                />
+                            ) : (
+                                <p
+                                    className={[
+                                        "text-base md:text-lg leading-relaxed whitespace-pre-line",
+                                        textColorClass(data.textColorPreset ?? "auto"),
+                                    ].join(" ")}
+                                >
+                                    {body}
+                                </p>
+                            )
+                        ) : null}
 
                         {/* CTAs */}
                         {visibleCtas.length > 0 && (

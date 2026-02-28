@@ -1,4 +1,5 @@
 import type { HomePageCMS } from "../../../../content/types/homePage";
+import DOMPurify from "dompurify";
 
 export function NewsPreview({ home }: { home?: HomePageCMS | null }) {
     const block = (home as any)?.news;
@@ -87,7 +88,21 @@ export function NewsPreview({ home }: { home?: HomePageCMS | null }) {
                                     </h3>
 
                                     {it.excerpt ? (
-                                        <p className="mt-2 line-clamp-3 text-sm text-gray-600">{it.excerpt}</p>
+                                        <div
+                                            className="
+      mt-2 text-sm text-gray-600 leading-relaxed
+      prose prose-sm max-w-none
+      line-clamp-3
+      [&_p]:m-0 [&_p+p]:mt-2
+      [&_ul]:my-2 [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:pl-5
+      [&_li]:my-1
+      [&_strong]:font-semibold
+      [&_a]:text-red-700 [&_a]:underline
+    "
+                                            dangerouslySetInnerHTML={{
+                                                __html: DOMPurify.sanitize(it.excerpt ?? ""),
+                                            }}
+                                        />
                                     ) : null}
 
                                     {(it.date || it.readingTime) && (

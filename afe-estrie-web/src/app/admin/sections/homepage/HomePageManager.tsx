@@ -28,6 +28,7 @@ export default function HomePageManager() {
         initMissing,
     } = useHomePageDraft();
 
+
     const [expandedSections, setExpandedSections] = useState<Set<string>>(
         () => new Set()
     );
@@ -127,7 +128,7 @@ export default function HomePageManager() {
 
             <Toast toast={toast} />
 
-            <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-8xl px-1 py-8 sm:px-6 lg:px-8">
 
 
                 {/* CTAs Header */}
@@ -439,10 +440,11 @@ export default function HomePageManager() {
                             />
 
                             <NewsEditor
-                                block={(homepage as any).news}
-                                onChange={(next: any) =>
-                                    setDraft({ ...(homepage as any), news: next })
+                                block={homepage.news}
+                                onChange={(next) =>
+                                    setDraft((d) => (d ? ({ ...d, news: next } as HomePageCMS) : d))
                                 }
+                                onSave={publish}
                             />
 
                             <ContactEditor

@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, getDoc, writeBatch, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, writeBatch } from "firebase/firestore";
 import type { NavItem } from "../content/types/navTypes";
 import { logAdminActivity } from "./audit";
 
@@ -129,35 +129,6 @@ function prepareForFirestore(items: NavItem[]): any {
 }
 
 // Check Firestore connection and permissions
-async function checkFirestoreAccess() {
-  try {
-    NavigationLogger.info('Firestore', 'Checking Firestore access...');
-
-    // Try to read from a test collection
-    const testCollection = collection(db, '_test_access');
-    const testDocs = await getDocs(testCollection);
-
-    NavigationLogger.info('Firestore', 'Firestore access check successful', {
-      canRead: true,
-      testCollectionSize: testDocs.size
-    });
-
-    return { canRead: true, canWrite: true };
-  } catch (error: any) {
-    NavigationLogger.error('Firestore', 'Firestore access check failed', {
-      error: error.message,
-      code: error.code,
-      details: error
-    });
-
-    // Check for specific permission errors
-    const canRead = !error.code || !error.code.includes('permission');
-    const canWrite = !error.code || !error.code.includes('permission');
-
-    return { canRead, canWrite };
-  }
-}
-
 export async function getNavigation(): Promise<NavItem[]> {
   NavigationLogger.info('GET', 'Fetching navigation from Firestore', {
     path: 'siteConfig/navigation',
@@ -209,7 +180,7 @@ export async function getNavigation(): Promise<NavItem[]> {
     });
 
     // Check Firestore access for debugging
-    await checkFirestoreAccess();
+    // await checkFirestoreAccess();
 
     throw error;
   }
@@ -245,10 +216,7 @@ export async function saveNavigation(items: NavItem[]) {
     NavigationLogger.debug('SAVE', 'Validation passed');
 
     // Step 2: Check Firestore access
-    const access = await checkFirestoreAccess();
-    if (!access.canWrite) {
-      throw new Error('No write permission to Firestore');
-    }
+    
 
     // Step 3: Prepare data for Firestore
     NavigationLogger.debug('SAVE', 'Preparing data for Firestore');

@@ -13,6 +13,7 @@ import {
     ExternalLink,
     ChevronRight,
 } from "lucide-react";
+import DOMPurify from "dompurify";
 
 type CtaVariant = "primary" | "secondary" | "outline";
 type CtaSize = "sm" | "md" | "lg";
@@ -142,6 +143,11 @@ function normalizeCtas(input: any): Array<{
         .slice(0, 3);
 
     return out;
+}
+
+function looksLikeHtml(s: string) {
+    const t = (s || "").trim();
+    return t.startsWith("<") && /<\/?[a-z][\s\S]*>/i.test(t);
 }
 
 export function RichTextSectionView({
@@ -376,10 +382,10 @@ export function RichTextSectionView({
                                     key={heading.id}
                                     href={`#${heading.id}`}
                                     className={`flex items-center gap-2 text-sm transition-colors hover:text-red-700 ${heading.level === 1
-                                            ? "font-semibold text-gray-900"
-                                            : heading.level === 2
-                                                ? "font-medium text-gray-800 ml-2"
-                                                : "text-gray-600 ml-4"
+                                        ? "font-semibold text-gray-900"
+                                        : heading.level === 2
+                                            ? "font-medium text-gray-800 ml-2"
+                                            : "text-gray-600 ml-4"
                                         }`}
                                 >
                                     <div
@@ -404,13 +410,37 @@ export function RichTextSectionView({
                         "prose-code:before:content-none prose-code:after:content-none",
                     ].join(" ")}
                 >
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeSlug, rehypeAutolinkHeadings]}
-                        components={components as any}
-                    >
-                        {raw}
-                    </ReactMarkdown>
+                    {looksLikeHtml(raw) ? (
+                        <div
+                            className={[
+                                "prose prose-lg prose-slate max-w-none",
+                                preset.prose,
+                                "prose-headings:font-semibold prose-headings:text-gray-900",
+                                "prose-p:leading-7 prose-p:text-gray-700",
+                                "prose-strong:text-gray-900 prose-strong:font-semibold",
+                                "prose-a:text-red-700 prose-a:font-semibold prose-a:no-underline hover:prose-a:underline",
+                                "prose-code:before:content-none prose-code:after:content-none",
+
+                                // list styling (important for Tiptap HTML lists)
+                                "[&_ul]:my-4 [&_ul]:pl-6 [&_ul]:list-disc",
+                                "[&_ol]:my-4 [&_ol]:pl-6 [&_ol]:list-decimal",
+                                "[&_li]:my-1",
+
+                                "[&_p]:my-3 [&_p:first-child]:mt-0",
+                            ].join(" ")}
+                            dangerouslySetInnerHTML={{
+                                __html: DOMPurify.sanitize(raw),
+                            }}
+                        />
+                    ) : (
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeSlug, rehypeAutolinkHeadings]}
+                            components={components as any}
+                        >
+                            {raw}
+                        </ReactMarkdown>
+                    )}
                 </div>
 
                 {/* CTAs (supports enabled, newTab, size, icon, id) */}

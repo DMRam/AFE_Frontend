@@ -22,6 +22,45 @@ function isSplit(s: AnySection) {
   return s?.type === "split";
 }
 
+/**
+ * Convert stored rich HTML into a safe plain-text preview.
+ * - If input is already plain text, it returns it as-is.
+ * - Guards SSR (no document).
+ */
+function htmlToText(input: unknown): string {
+  const raw = String(input ?? "").trim();
+  if (!raw) return "";
+
+  // quick detect: if no tags, return as-is
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(raw);
+  if (!looksLikeHtml) return raw;
+
+  // SSR guard
+  if (typeof document === "undefined") {
+    // fallback: strip tags with regex (ok for preview)
+    return raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  const div = document.createElement("div");
+  div.innerHTML = raw;
+  const text = div.textContent || div.innerText || "";
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function excerptFromSection(s: AnySection, max = 80): string {
+  // For rich content sections, prefer body, fallback to content
+  const raw =
+    isRichText(s) || isSplit(s)
+      ? (s as any).body ?? (s as any).content ?? ""
+      : "";
+
+  const text = htmlToText(raw);
+  if (!text) return "";
+
+  if (text.length <= max) return text;
+  return text.slice(0, max).trimEnd() + "…";
+}
+
 export function SectionsEditor({
   sections,
   onAddHero,
@@ -87,7 +126,9 @@ export function SectionsEditor({
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
           <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
           <div className="text-sm text-gray-600">Aucune section</div>
-          <div className="text-xs text-gray-500 mt-1">Ajoutez votre premier contenu.</div>
+          <div className="text-xs text-gray-500 mt-1">
+            Ajoutez votre premier contenu.
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -96,25 +137,35 @@ export function SectionsEditor({
 
             const subtitle =
               isHero(s)
-                ? s.subtitle
-                : isSplit(s)
-                  ? s.title
-                  : isRichText(s)
-                    ? (s.body ?? "").slice(0, 60) + (String(s.body ?? "").length > 60 ? "…" : "")
-                    : "";
+                ? String((s as any).subtitle ?? "")
+                : isSplit(s) || isRichText(s)
+                  ? excerptFromSection(s, 90)
+                  : "";
 
-            const label =
-              isHero(s) ? "Bandeau" : isSplit(s) ? "Image + texte" : isRichText(s) ? "Texte" : "Section";
+            const label = isHero(s)
+              ? "Bandeau"
+              : isSplit(s)
+                ? "Image + texte"
+                : isRichText(s)
+                  ? "Texte"
+                  : "Section";
 
-            const title =
-              isHero(s) ? (s.title || "Bandeau") : isSplit(s) ? (s.title || "Section") : isRichText(s) ? (s.heading || "Bloc de texte") : "Section";
+            const title = isHero(s)
+              ? (s as any).title || "Bandeau"
+              : isSplit(s)
+                ? (s as any).title || "Section"
+                : isRichText(s)
+                  ? (s as any).heading || "Bloc de texte"
+                  : "Section";
 
             return (
               <div
-                key={s.id ?? `${s.type}-${i}`}
+                key={s.id ?? `${(s as any).type}-${i}`}
                 className={[
                   "rounded-lg border bg-white p-4 transition-colors",
-                  disabled ? "border-gray-200 bg-gray-50" : "border-gray-300 hover:border-gray-400",
+                  disabled
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-gray-300 hover:border-gray-400",
                 ].join(" ")}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -123,7 +174,9 @@ export function SectionsEditor({
                       <span
                         className={[
                           "rounded-full px-2 py-1 text-xs font-medium",
-                          disabled ? "bg-gray-100 text-gray-700" : "bg-blue-100 text-blue-700",
+                          disabled
+                            ? "bg-gray-100 text-gray-700"
+                            : "bg-blue-100 text-blue-700",
                         ].join(" ")}
                       >
                         {label}
@@ -132,14 +185,18 @@ export function SectionsEditor({
                       <span
                         className={[
                           "rounded-full px-2 py-1 text-xs font-medium",
-                          disabled ? "bg-yellow-100 text-yellow-800" : "bg-emerald-100 text-emerald-800",
+                          disabled
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-emerald-100 text-emerald-800",
                         ].join(" ")}
                       >
                         {disabled ? "Masquée" : "Visible"}
                       </span>
                     </div>
 
-                    <div className="text-sm font-medium text-gray-900">{title}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {title}
+                    </div>
 
                     {subtitle ? (
                       <div className="mt-1 text-sm text-gray-600 line-clamp-2">
@@ -147,7 +204,9 @@ export function SectionsEditor({
                       </div>
                     ) : null}
 
-                    <div className="mt-2 text-xs text-gray-500">ID: {s.id || "—"}</div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      ID: {(s as any).id || "—"}
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-1">
@@ -157,7 +216,11 @@ export function SectionsEditor({
                       className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded"
                       title={disabled ? "Afficher" : "Masquer"}
                     >
-                      {disabled ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {disabled ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
 
                     <button
