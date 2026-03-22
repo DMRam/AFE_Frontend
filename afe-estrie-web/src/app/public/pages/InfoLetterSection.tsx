@@ -17,6 +17,11 @@ export function InfoLetterSection() {
         setIsSubmitting(true);
 
         try {
+
+            // TODO: replace with real email provider + double opt-in flow later. 
+            // For now, just send to n8n webhook which forwards to Mailchimp 
+            // (or whatever) and handles duplicates, errors, etc.
+            // Or from n8n send this to mailchimp.
             const res = await fetch(N8N_INFOLETTER_WEBHOOK_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

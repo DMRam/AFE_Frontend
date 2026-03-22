@@ -4,7 +4,6 @@ import type { AnySection } from "../../../types";
 import { isType } from "../textBody";
 import { Upload } from "lucide-react";
 
-
 export function SplitEditor({
   section,
   onChange,
@@ -27,14 +26,15 @@ export function SplitEditor({
   const imageSide = String((section as any).imageSide ?? "right");
   const variant = String((section as any).variant ?? "default");
 
+  const imageSize = String((section as any).imageSize ?? "md");
+  const imageMaxWidth = Number((section as any).imageMaxWidth ?? 0);
+  const imageObjectFit = String((section as any).imageObjectFit ?? "cover");
+
   async function onPickFile(file: File) {
     setUploading(true);
     setUploadError("");
     try {
-      // Use whatever you already use in your project:
-      // - uploadImage(file, "page-images")
-      // - or uploadHomeMedia(file)
-      const { url } = await uploadHomeMedia(file); // returns {url, path}
+      const { url } = await uploadHomeMedia(file);
       onChange({ ...(section as any), imageUrl: url });
     } catch (e: any) {
       setUploadError(`Erreur d'upload: ${e?.message ?? "Inconnue"}`);
@@ -66,7 +66,7 @@ export function SplitEditor({
             onChange({
               ...(section as any),
               body: html,
-              content: html, // legacy sync
+              content: html,
             })
           }
           placeholder="Écrivez votre texte ici…"
@@ -132,6 +132,68 @@ export function SplitEditor({
             </select>
           </label>
         </div>
+      </div>
+
+      {/* NEW: Image sizing controls */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="text-sm block">
+          <div className="mb-2 font-medium text-gray-900">Taille de l'image</div>
+          <select
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+            value={imageSize}
+            onChange={(e) =>
+              onChange({
+                ...(section as any),
+                imageSize: e.target.value,
+              })
+            }
+          >
+            <option value="sm">Petite</option>
+            <option value="md">Moyenne</option>
+            <option value="lg">Grande</option>
+            <option value="full">Pleine largeur du bloc</option>
+          </select>
+        </label>
+
+        <label className="text-sm block">
+          <div className="mb-2 font-medium text-gray-900">Largeur max personnalisée (px)</div>
+          <input
+            type="number"
+            min={0}
+            step={10}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+            value={imageMaxWidth || ""}
+            onChange={(e) =>
+              onChange({
+                ...(section as any),
+                imageMaxWidth: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+            placeholder="ex. 420"
+          />
+          <div className="mt-1 text-xs text-gray-500">
+            Laissez vide pour utiliser la taille prédéfinie.
+          </div>
+        </label>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="text-sm block">
+          <div className="mb-2 font-medium text-gray-900">Ajustement de l'image</div>
+          <select
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+            value={imageObjectFit}
+            onChange={(e) =>
+              onChange({
+                ...(section as any),
+                imageObjectFit: e.target.value,
+              })
+            }
+          >
+            <option value="cover">Recouvrir</option>
+            <option value="contain">Contenir</option>
+          </select>
+        </label>
       </div>
 
       <label className="text-sm block">

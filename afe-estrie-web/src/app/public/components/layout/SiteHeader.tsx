@@ -1,27 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import logoFooter from "../../../../assets/logo/logo.png";
+import { useNavigate } from "react-router-dom";
 import { Heart, UserPlus } from "lucide-react";
+
+import logoFooter from "../../../../assets/logo/logo.png";
 import { MemberModal } from "../../../../components/modals/MemberModal";
 import { useNavigation } from "../../../../hooks/useNavigation";
 import type { NavItem, NavNode } from "../../../../content/types/navTypes";
 import { useHomePagePublic } from "../../../../hooks/useHomePagePublic";
-import { useNavigate } from "react-router-dom";
-
-function isHash(href?: string) {
-  return Boolean(href && href.startsWith("#"));
-}
-
-/**
- * Smooth scroll with sticky header offset
- */
-function scrollToHashWithOffset(href: string, offset = 92) {
-  const id = href.replace("#", "");
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  const top = el.getBoundingClientRect().top + window.scrollY - offset;
-  window.scrollTo({ top, behavior: "smooth" });
-}
+import {
+  handleSmartNavigation,
+  isExternalNewTabUrl,
+} from "../../utils/navigation";
 
 type AnyNav = NavItem | NavNode;
 
@@ -30,11 +19,9 @@ export function SiteHeader() {
   const { home } = useHomePagePublic();
   const navigate = useNavigate();
 
-
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
 
-  // CTA config (with safe fallbacks)
   const donateCta = {
     enabled: home?.headerCtas?.donate?.enabled !== false,
     label: home?.headerCtas?.donate?.label ?? "Faire un don",
@@ -48,24 +35,65 @@ export function SiteHeader() {
     href: home?.headerCtas?.member?.href ?? "",
   };
 
-  const openMember = () => {
-    if (memberCta.mode === "external") {
-      if (memberCta.href) window.location.href = memberCta.href;
-      return;
-    }
-    setMemberOpen(true);
-  };
-
-  // Stack path for unlimited nesting: [menuId, submenuId, ...]
   const [path, setPath] = useState<string[]>([]);
-  const [_dir, setDir] = useState<"forward" | "back">("forward"); // (optional) for animations later
+  const [_dir, setDir] = useState<"forward" | "back">("forward");
+
+
+  useEffect(() => {
+    const resetUiState = () => {
+      setMemberOpen(false);
+      setDrawerOpen(false);
+      setPath([]);
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    };
+
+    window.addEventListener("pageshow", resetUiState);
+    return () => window.removeEventListener("pageshow", resetUiState);
+  }, []);
+
+  const closeModal = () => {
+    setMemberOpen(false);
+  };
 
   const closeDrawer = () => {
     setDrawerOpen(false);
     setPath([]);
   };
 
-  // lock body scroll when drawer OR member modal is open
+  const closeEverything = () => {
+    setDrawerOpen(false);
+    setPath([]);
+    setMemberOpen(false);
+  };
+
+  const handleNavigate = (href?: string) => {
+    handleSmartNavigation(href, navigate, {
+      close: closeDrawer,
+      offset: 92,
+      delay: 50,
+    });
+  };
+
+  const openMember = () => {
+    if (memberCta.mode === "external") {
+      setMemberOpen(false);
+      setDrawerOpen(false);
+      setPath([]);
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+
+      handleSmartNavigation(memberCta.href, navigate, {
+        close: closeDrawer,
+        offset: 92,
+        delay: 0,
+      });
+      return;
+    }
+
+    setMemberOpen(true);
+  };
+
   useEffect(() => {
     const shouldLock = drawerOpen || memberOpen;
     if (!shouldLock) return;
@@ -73,11 +101,13 @@ export function SiteHeader() {
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
 
-    // prevent layout shift when scrollbar disappears
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
+
     document.body.style.overflow = "hidden";
 
     return () => {
@@ -86,28 +116,27 @@ export function SiteHeader() {
     };
   }, [drawerOpen, memberOpen]);
 
-  // close on ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setDrawerOpen(false);
-        setPath([]);
-        setMemberOpen(false);
+        closeEverything();
       }
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Build an index of ALL nodes by id (top-level + nested)
   const navIndex = useMemo(() => {
     const map = new Map<string, AnyNav>();
 
     const walk = (nodes?: AnyNav[]) => {
-      for (const n of nodes ?? []) {
-        if (!n?.id) continue;
-        map.set(n.id, n);
-        const children = (n as AnyNav).children as AnyNav[] | undefined;
+      for (const node of nodes ?? []) {
+        if (!node?.id) continue;
+
+        map.set(node.id, node);
+
+        const children = (node as AnyNav).children as AnyNav[] | undefined;
         if (children?.length) walk(children);
       }
     };
@@ -131,17 +160,6 @@ export function SiteHeader() {
     return (activeNode as AnyNav).label ?? "Menu";
   }, [activeNode]);
 
-  const handleNavigate = (href?: string) => {
-    if (!href) return;
-    closeDrawer();
-
-    window.setTimeout(() => {
-      if (isHash(href)) scrollToHashWithOffset(href, 92);
-      else if (href.startsWith("http")) window.open(href, "_blank", "noopener,noreferrer");
-      else navigate(href);
-    }, 50);
-  };
-
   const openChildren = (id: string) => {
     setDir("forward");
     setPath((prev) => [...prev, id]);
@@ -154,15 +172,24 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-white">
-      {/* DESKTOP: el header visual va en <SiteNav /> */}
-      <div className="xl:hidden border-b bg-white">
+      <div className="border-b bg-white xl:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <a href="#" className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() =>
+              handleSmartNavigation("/", navigate, {
+                offset: 92,
+                delay: 0,
+              })
+            }
+            className="flex items-center gap-3"
+            aria-label="Retour à l’accueil"
+          >
             <img src={logoFooter} alt="AFE" className="h-16 object-contain" />
-
-          </a>
+          </button>
 
           <button
+            type="button"
             className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-3xl font-semibold shadow-sm"
             aria-label="Ouvrir le menu"
             aria-expanded={drawerOpen}
@@ -173,25 +200,23 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* MOBILE DRAWER (tu código igual) */}
       {drawerOpen && (
         <div className="xl:hidden">
-          {/* Backdrop */}
           <button
+            type="button"
             aria-label="Fermer"
             onClick={closeDrawer}
             className="fixed inset-0 z-40 cursor-default bg-black/40"
           />
 
-          {/* Panel */}
           <div className="fixed right-0 top-0 z-50 flex h-full w-[86%] max-w-sm flex-col bg-white shadow-xl">
-            {/* Header */}
             <div className="flex items-center justify-between border-b px-4 py-4">
               <div className="text-sm font-semibold text-gray-900">{title}</div>
 
               <div className="flex items-center gap-2">
                 {path.length > 0 ? (
                   <button
+                    type="button"
                     onClick={goBack}
                     className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
                     aria-label="Retour"
@@ -201,6 +226,7 @@ export function SiteHeader() {
                 ) : null}
 
                 <button
+                  type="button"
                   onClick={closeDrawer}
                   className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
                   aria-label="Fermer le menu"
@@ -210,9 +236,7 @@ export function SiteHeader() {
               </div>
             </div>
 
-            {/* Body (scrollable) */}
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
-              {/* CTAs only on root level */}
               {path.length === 0 ? (
                 <>
                   <div className="flex gap-2">
@@ -220,7 +244,7 @@ export function SiteHeader() {
                       <button
                         type="button"
                         onClick={() => handleNavigate(donateCta.href)}
-                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-600/70 bg-white px-4 py-2 text-center text-sm font-semibold text-red-700 shadow-sm"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-600/70 bg-white px-4 py-2 text-center text-sm font-semibold text-red-700 shadow-sm"
                       >
                         <Heart className="h-4 w-4" aria-hidden="true" />
                         {donateCta.label}
@@ -231,10 +255,15 @@ export function SiteHeader() {
                       <button
                         type="button"
                         onClick={() => {
+                          if (memberCta.mode === "external") {
+                            openMember();
+                            return;
+                          }
+
                           closeDrawer();
                           openMember();
                         }}
-                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm"
                       >
                         <UserPlus className="h-4 w-4" aria-hidden="true" />
                         {memberCta.label}
@@ -246,7 +275,6 @@ export function SiteHeader() {
                 </>
               ) : null}
 
-              {/* List */}
               <div className="relative overflow-hidden">
                 <ul className="space-y-2">
                   {loading ? (
@@ -259,23 +287,34 @@ export function SiteHeader() {
                     </li>
                   ) : (
                     currentList.map((item) => {
-                      const enabled = (item as any).enabled !== false;
+                      const enabled = (item as AnyNav & { enabled?: boolean }).enabled !== false;
                       if (!enabled) return null;
 
-                      const hasChildren = Boolean((item as any).children?.length);
+                      const hasChildren = Boolean(
+                        (item as AnyNav).children?.length
+                      );
+
+                      const href = (item as AnyNav).href;
+                      const isExternal = isExternalNewTabUrl(href);
 
                       return (
                         <li key={item.id}>
                           <button
                             type="button"
                             onClick={() => {
-                              if (hasChildren) return openChildren(item.id);
-                              handleNavigate((item as any).href);
+                              if (hasChildren) {
+                                openChildren(item.id);
+                                return;
+                              }
+
+                              handleNavigate(href);
                             }}
-                            className="w-full flex items-center justify-between rounded-xl px-3 py-3 text-left text-base font-semibold text-gray-900 hover:bg-gray-50"
+                            className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-base font-semibold text-gray-900 hover:bg-gray-50"
                           >
                             <span>{item.label}</span>
-                            <span className="text-gray-400">{hasChildren ? "›" : "↗"}</span>
+                            <span className="text-gray-400">
+                              {hasChildren ? "›" : isExternal ? "↗" : "→"}
+                            </span>
                           </button>
                         </li>
                       );
@@ -290,8 +329,6 @@ export function SiteHeader() {
         </div>
       )}
 
-      <MemberModal open={memberOpen} onClose={() => setMemberOpen(false)} />
-    </header>
+<MemberModal open={memberOpen} onClose={closeModal} />    </header>
   );
-
 }

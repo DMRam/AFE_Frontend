@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import type { CategoryOption } from "../types";
 import { Plus, X, Image as ImageIcon, Trash2, ChevronDown } from "lucide-react";
-import { uploadImage } from "../../../../../services/storageRepo"; // ajusta el path si tu estructura difiere
+import { uploadImage } from "../../../../../services/storageRepo";
 
 function slugifyFrCA(input: string) {
     return input
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // accents
+        .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)+/g, "")
         .slice(0, 40);
@@ -56,8 +56,6 @@ export function PageDetailsForm({
     setCategoryId,
     categories,
     onAddCategory,
-
-    // ✅ SEO (nuevo)
     seoTitle,
     setSeoTitle,
     seoDescription,
@@ -73,7 +71,7 @@ export function PageDetailsForm({
     categoryId: string;
     setCategoryId: (v: string) => void;
     categories: CategoryOption[];
-    onAddCategory: (c: CategoryOption) => void;
+    onAddCategory: (c: CategoryOption) => Promise<void>;
 
     seoTitle: string;
     setSeoTitle: (v: string) => void;
@@ -84,6 +82,8 @@ export function PageDetailsForm({
 }) {
     const [openCat, setOpenCat] = useState(false);
     const [newLabel, setNewLabel] = useState("");
+    const [creatingCategory, setCreatingCategory] = useState(false);
+    const [categoryError, setCategoryError] = useState("");
 
     const [seoOpen, setSeoOpen] = useState(false);
     const [uploadingSeo, setUploadingSeo] = useState(false);
@@ -98,20 +98,30 @@ export function PageDetailsForm({
         return categories.some((c) => c.id === id);
     }, [categories, suggestedId]);
 
-    function createCategory() {
-        if (!canCreate || exists) return;
-        const c = { id: suggestedId, label: newLabel.trim() };
-        onAddCategory(c);
-        setCategoryId(c.id);
-        setNewLabel("");
-        setOpenCat(false);
+    async function createCategory() {
+        if (!canCreate || exists || creatingCategory) return;
+
+        setCreatingCategory(true);
+        setCategoryError("");
+
+        try {
+            const c = { id: suggestedId, label: newLabel.trim() };
+            await onAddCategory(c);
+            setCategoryId(c.id);
+            setNewLabel("");
+            setOpenCat(false);
+        } catch (error) {
+            console.error(error);
+            setCategoryError("Impossible de créer la catégorie.");
+        } finally {
+            setCreatingCategory(false);
+        }
     }
 
     async function onPickSeoImage(file?: File) {
         if (!file) return;
         setSeoErr("");
 
-        // mini guardrail
         if (file.size > 2 * 1024 * 1024) {
             setSeoErr("L’image doit être inférieure à 2 Mo.");
             return;
@@ -119,7 +129,6 @@ export function PageDetailsForm({
 
         setUploadingSeo(true);
         try {
-            // folder dedicado para SEO
             const url = await uploadImage(file, "page-seo");
             setSeoImage(url);
         } catch (e) {
@@ -152,16 +161,12 @@ export function PageDetailsForm({
                     </div>
 
                     <ChevronDown
-                        className={`h-5 w-5 text-blue-600 transition-transform ${seoOpen ? "rotate-180" : ""
-                            }`}
+                        className={`h-5 w-5 text-blue-600 transition-transform ${seoOpen ? "rotate-180" : ""}`}
                     />
                 </div>
             </div>
 
-
-            {/* Layout plus dense */}
             <div className="grid gap-4 lg:grid-cols-3">
-                {/* Titre */}
                 <label className="text-sm lg:col-span-2">
                     <div className="mb-2 font-medium text-gray-900">Titre</div>
                     <input
@@ -170,15 +175,12 @@ export function PageDetailsForm({
                         onChange={(e) => {
                             const v = e.target.value;
                             setTitle(v);
-
-                            // ✅ UX: si seoTitle est vide, lo proponemos con el título
                             if (!seoTitle.trim()) setSeoTitle(v);
                         }}
                         placeholder="Ex.: Services, À propos, Ressources…"
                     />
                 </label>
 
-                {/* Adresse */}
                 <label className="text-sm">
                     <div className="mb-2 font-medium text-gray-900">Adresse</div>
                     <input
@@ -189,7 +191,6 @@ export function PageDetailsForm({
                     <div className="mt-1 text-xs text-gray-500">Gérée automatiquement.</div>
                 </label>
 
-                {/* Catégorie + Ajouter */}
                 <div className="text-sm lg:col-span-2">
                     <div className="mb-2 font-medium text-gray-900">Catégorie</div>
 
@@ -209,7 +210,10 @@ export function PageDetailsForm({
 
                         <button
                             type="button"
-                            onClick={() => setOpenCat(true)}
+                            onClick={() => {
+                                setCategoryError("");
+                                setOpenCat(true);
+                            }}
                             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             title="Ajouter une catégorie"
                         >
@@ -223,7 +227,6 @@ export function PageDetailsForm({
                     </div>
                 </div>
 
-                {/* Publiée */}
                 <div className="flex items-center gap-3 lg:justify-end">
                     <label className="flex items-center gap-2">
                         <input
@@ -238,7 +241,6 @@ export function PageDetailsForm({
                 </div>
             </div>
 
-            {/* ✅ SEO panel (simple y humano) */}
             {seoOpen && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-4">
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
@@ -279,9 +281,7 @@ export function PageDetailsForm({
                             Image de partage (SEO)
                         </div>
 
-                        {seoErr ? (
-                            <div className="mb-2 text-xs text-red-600">{seoErr}</div>
-                        ) : null}
+                        {seoErr ? <div className="mb-2 text-xs text-red-600">{seoErr}</div> : null}
 
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <input
@@ -343,8 +343,7 @@ export function PageDetailsForm({
                 </div>
             )}
 
-            {/* Modal ajout catégorie */}
-            <MiniModal open={openCat} title="Ajouter une catégorie" onClose={() => setOpenCat(false)}>
+            <MiniModal open={openCat} title="Ajouter une catégorie" onClose={() => !creatingCategory && setOpenCat(false)}>
                 <div className="space-y-3">
                     <label className="text-sm block">
                         <div className="mb-2 font-medium text-gray-900">Nom de la catégorie</div>
@@ -354,6 +353,7 @@ export function PageDetailsForm({
                             onChange={(e) => setNewLabel(e.target.value)}
                             placeholder="Ex.: Programmes, Ressources, Services…"
                             autoFocus
+                            disabled={creatingCategory}
                         />
                     </label>
 
@@ -363,22 +363,24 @@ export function PageDetailsForm({
                     </div>
 
                     {exists && <div className="text-xs text-red-600">Cette catégorie existe déjà.</div>}
+                    {categoryError && <div className="text-xs text-red-600">{categoryError}</div>}
 
                     <div className="flex justify-end gap-2 pt-2">
                         <button
                             type="button"
                             onClick={() => setOpenCat(false)}
-                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            disabled={creatingCategory}
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
                         >
                             Annuler
                         </button>
                         <button
                             type="button"
                             onClick={createCategory}
-                            disabled={!canCreate || exists}
+                            disabled={!canCreate || exists || creatingCategory}
                             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
                         >
-                            Ajouter
+                            {creatingCategory ? "Ajout..." : "Ajouter"}
                         </button>
                     </div>
                 </div>

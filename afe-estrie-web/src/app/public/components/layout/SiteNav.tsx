@@ -8,40 +8,34 @@ import {
     type Dispatch,
     type SetStateAction,
 } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+    ChevronDown,
+    ExternalLink,
+    ChevronRight,
+    Loader2,
+    Search,
+    Heart,
+    UserPlus,
+} from "lucide-react";
+
 import { useNavigation } from "../../../../hooks/useNavigation";
 import type { NavNode } from "../../../../content/types/navTypes";
-import { ChevronDown, ExternalLink, ChevronRight, Loader2, Search } from "lucide-react";
-import { usePreferredReducedMotion } from "../../../../hooks/usePreferredReduceMotion";
 import { useClickOutside } from "../../../../hooks/useClickOutside";
 import { useFocusTrap } from "../../../../hooks/useFocusTrap";
-import { useNavigate } from "react-router-dom";
+import { useHomePagePublic } from "../../../../hooks/useHomePagePublic";
 
 import logoFooter from "../../../../assets/logo/logo.png";
-import { Heart, UserPlus } from "lucide-react";
-import { useHomePagePublic } from "../../../../hooks/useHomePagePublic";
 import { MemberModal } from "../../../../components/modals/MemberModal";
+import {
+    handleSmartNavigation,
+    isExternalNewTabUrl,
+} from "../../utils/navigation";
 
 const CLOSE_DELAY = 420;
-const MOBILE_BREAKPOINT = 768; // md
+const MOBILE_BREAKPOINT = 768;
 
 // ---------- utils ----------
-function isHash(href?: string): boolean {
-    return !!href && href.startsWith("#");
-}
-
-function isExternal(href?: string): boolean {
-    return !!href && (href.startsWith("http://") || href.startsWith("https://"));
-}
-
-function scrollToHashWithOffset(href: string, offset = 92): void {
-    const id = href.replace("#", "");
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    const top = el.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top, behavior: "smooth" });
-}
-
 function startsWithPath(openPath: string[], parentPath: string[]): boolean {
     if (parentPath.length > openPath.length) return false;
     for (let i = 0; i < parentPath.length; i++) {
@@ -76,37 +70,52 @@ function LiveRegion({ message }: { message: string }) {
 export function SiteNav() {
     const navigate = useNavigate();
     const { items: rawItems, loading, error } = useNavigation();
+    const { home } = useHomePagePublic();
+
     const navId = useId();
     const navRef = useRef<HTMLElement>(null);
-    const prefersReducedMotion = usePreferredReducedMotion();
+    const closeTimer = useRef<number | null>(null);
 
     const [openPath, setOpenPath] = useState<string[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     const [announcement, setAnnouncement] = useState("");
-    const closeTimer = useRef<number | null>(null);
-
-    const items = useMemo(() => (rawItems ?? []).filter((x) => x.enabled !== false), [rawItems]);
-
-    const { home } = useHomePagePublic();
     const [memberOpen, setMemberOpen] = useState(false);
-
     const [_isStuck, setIsStuck] = useState(false);
+    const [q, setQ] = useState("");
+
+    useEffect(() => {
+        const resetUiState = () => {
+            setMemberOpen(false);
+            setOpenPath([]);
+            document.body.style.overflow = "";
+            document.body.style.paddingRight = "";
+        };
+
+        window.addEventListener("pageshow", resetUiState);
+        return () => window.removeEventListener("pageshow", resetUiState);
+    }, []);
+
+    const closeModal = () => {
+        setMemberOpen(false);
+    };
+
+    const items = useMemo(
+        () => (rawItems ?? []).filter((x) => x.enabled !== false),
+        [rawItems]
+    );
 
     const SEARCH_PATH = "/recherche";
 
-    function s(v: any) {
-        return String(v ?? "").trim();
+    function s(value: unknown) {
+        return String(value ?? "").trim();
     }
-
-    const [q, setQ] = useState("");
 
     const onSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const query = s(q);
         if (!query) return;
-        window.location.href = `${SEARCH_PATH}?q=${encodeURIComponent(query)}`;
+        navigate(`${SEARCH_PATH}?q=${encodeURIComponent(query)}`);
     };
-
 
     const donateCta = {
         enabled: home?.headerCtas?.donate?.enabled !== false,
@@ -120,33 +129,6 @@ export function SiteNav() {
         mode: home?.headerCtas?.member?.mode ?? "stripe",
         href: home?.headerCtas?.member?.href ?? "",
     };
-
-    const openMember = () => {
-        if (memberCta.mode === "external") {
-            if (memberCta.href) window.location.href = memberCta.href;
-            return;
-        }
-        setMemberOpen(true);
-    };
-
-    useEffect(() => {
-        const onScroll = () => setIsStuck(window.scrollY > 4);
-        onScroll();
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-    }, []);
-
-    // mobile breakpoint
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-        checkMobile();
-        window.addEventListener("resize", checkMobile);
-        return () => window.removeEventListener("resize", checkMobile);
-    }, []);
-
-    useClickOutside(navRef, () => {
-        if (isMobile && openPath.length > 0) closeAll();
-    });
 
     const clearCloseTimer = useCallback(() => {
         if (closeTimer.current) {
@@ -169,40 +151,58 @@ export function SiteNav() {
 
     const onNavigate = useCallback(
         (href?: string) => {
-            closeAll();
-            if (!href) return;
-
-            setTimeout(() => {
-                if (isHash(href)) {
-                    if (!prefersReducedMotion) {
-                        scrollToHashWithOffset(href, 92);
-                    } else {
-                        const id = href.replace("#", "");
-                        const el = document.getElementById(id);
-                        if (el) {
-                            el.scrollIntoView();
-                            el.focus();
-                        }
-                    }
-                } else if (isExternal(href)) {
-                    window.open(href, "noopener,noreferrer");
-                } else {
-                    navigate(href);
-                }
-            }, 0);
+            handleSmartNavigation(href, navigate, {
+                close: closeAll,
+                offset: 92,
+                delay: 50,
+            });
         },
-        [closeAll, prefersReducedMotion, navigate]
+        [navigate, closeAll]
     );
+
+    const openMember = () => {
+        if (memberCta.mode === "external") {
+            handleSmartNavigation(memberCta.href, navigate, {
+                offset: 92,
+                delay: 0,
+            });
+            return;
+        }
+
+        setMemberOpen(true);
+    };
+
+    useEffect(() => {
+        const onScroll = () => setIsStuck(window.scrollY > 4);
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
+    useClickOutside(navRef, () => {
+        if (isMobile && openPath.length > 0) closeAll();
+    });
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") closeAll();
+
             if (e.key === "Tab" && navRef.current) {
                 setTimeout(() => {
-                    if (!navRef.current?.contains(document.activeElement)) closeAll();
+                    if (!navRef.current?.contains(document.activeElement)) {
+                        closeAll();
+                    }
                 }, 10);
             }
         };
+
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [closeAll]);
@@ -234,7 +234,7 @@ export function SiteNav() {
 
             <nav
                 ref={navRef}
-                className="hidden xl:block shadow-lg sticky top-0 z-50 bg-transparent backdrop-blur-sm"
+                className="hidden xl:block sticky top-0 z-50 bg-transparent shadow-lg backdrop-blur-sm"
                 aria-label="Main navigation"
             >
                 <div
@@ -244,42 +244,49 @@ export function SiteNav() {
                         gridTemplateRows: "auto auto",
                     }}
                 >
-                    {/* LEFT: LOGO spans BOTH rows */}
-                    <a href="/" className="row-span-2 h-full">
-                        <div className="h-full bg-white px-3 lg:px-4 flex items-center justify-center border-r border-gray-100">
+                    <a
+                        href="/"
+                        className="row-span-2 h-full"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleSmartNavigation("/", navigate, {
+                                close: closeAll,
+                                offset: 92,
+                                delay: 0,
+                            });
+                        }}
+                    >
+                        <div className="flex h-full items-center justify-center border-r border-gray-100 bg-white px-3 lg:px-4">
                             <img
                                 src={logoFooter}
                                 alt="Association de la Fibromyalgie de l’Estrie"
-                                className="h-20 lg:h-33 w-full object-contain"
+                                className="h-20 w-full object-contain lg:h-33"
                             />
                         </div>
                     </a>
 
-                    {/* ===== ROW 1: TOP BAR ===== */}
-                    <div className="bg-white border-b border-gray-100">
+                    <div className="border-b border-gray-100 bg-white">
                         <div className="px-3 lg:px-6">
                             <div className="flex items-center justify-between gap-4 py-4">
-                                {/* Left: phone/email */}
                                 <div className="min-w-0 flex items-center gap-4 text-sm font-semibold text-gray-700">
                                     <a
-                                        href="tel:(+1) 819 566-1067"
-                                        className="inline-flex items-center gap-2 hover:text-[#b33a22] transition"
+                                        href="tel:+18195661067"
+                                        className="inline-flex items-center gap-2 transition hover:text-[#b33a22]"
                                     >
                                         <span className="whitespace-nowrap">📞 +1 (819) 566-1067</span>
                                     </a>
 
-                                    <span className="hidden lg:inline text-gray-300">|</span>
+                                    <span className="hidden text-gray-300 lg:inline">|</span>
 
                                     <a
-                                        href="mailto:info@afe-estrie.org"
-                                        className="hidden lg:inline hover:text-[#b33a22] transition truncate"
+                                        href="mailto:info@fibromyalgie.ca"
+                                        className="hidden truncate transition hover:text-[#b33a22] lg:inline"
                                     >
                                         info@fibromyalgie.ca
                                     </a>
                                 </div>
 
-                                {/* Center: Search (lupa) */}
-                                <div className="hidden lg:block flex-1 max-w-[520px]">
+                                <div className="hidden max-w-[520px] flex-1 lg:block">
                                     <form onSubmit={onSearchSubmit} className="flex gap-2">
                                         <div className="relative flex-1">
                                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -287,43 +294,31 @@ export function SiteNav() {
                                                 value={q}
                                                 onChange={(e) => setQ(e.target.value)}
                                                 placeholder="Trouver une page, un sujet, une ressource…"
-                                                className="
-            w-full rounded-2xl border border-gray-200 bg-white
-            py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400
-            outline-none transition
-            focus:border-[#af2511]/50 focus:ring-4 focus:ring-[#af2511]/10
-          "
+                                                className="w-full rounded-2xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#af2511]/50 focus:ring-4 focus:ring-[#af2511]/10"
                                             />
                                         </div>
 
                                         <button
                                             type="submit"
-                                            className="
-          rounded-2xl bg-[#af2511] px-4 py-2.5 text-sm font-semibold text-white
-          shadow-sm transition hover:opacity-95
-        "
+                                            className="rounded-2xl bg-[#af2511] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
                                         >
                                             OK
                                         </button>
                                     </form>
                                 </div>
 
-                                {/* Right: CTAs */}
                                 <div className="shrink-0 flex items-center gap-2 whitespace-nowrap">
                                     {donateCta.enabled && (
                                         <a
                                             href={donateCta.href}
                                             onClick={(e) => {
-                                                if (donateCta.href?.startsWith("#")) {
-                                                    e.preventDefault();
-                                                    scrollToHashWithOffset(donateCta.href, 92);
-                                                }
+                                                e.preventDefault();
+                                                handleSmartNavigation(donateCta.href, navigate, {
+                                                    offset: 92,
+                                                    delay: 0,
+                                                });
                                             }}
-                                            className="
-          inline-flex items-center gap-2 rounded-full bg-[#b33a22]
-          px-3 py-2 text-sm font-extrabold text-white
-          shadow-sm hover:opacity-95 transition
-        "
+                                            className="inline-flex items-center gap-2 rounded-full bg-[#b33a22] px-3 py-2 text-sm font-extrabold text-white shadow-sm transition hover:opacity-95"
                                         >
                                             <Heart className="h-4 w-4" />
                                             <span className="hidden xl:inline">{donateCta.label}</span>
@@ -334,11 +329,7 @@ export function SiteNav() {
                                         <button
                                             type="button"
                                             onClick={openMember}
-                                            className="
-          inline-flex items-center gap-2 rounded-full bg-[#8f2c19]
-          px-3 py-2 text-sm font-extrabold text-white
-          shadow-sm hover:opacity-95 transition
-        "
+                                            className="inline-flex items-center gap-2 rounded-full bg-[#8f2c19] px-3 py-2 text-sm font-extrabold text-white shadow-sm transition hover:opacity-95"
                                         >
                                             <UserPlus className="h-4 w-4" />
                                             <span className="hidden xl:inline">{memberCta.label}</span>
@@ -346,15 +337,12 @@ export function SiteNav() {
                                     )}
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
 
-                    {/* ===== ROW 2: MAIN NAV ===== */}
                     <div className="bg-[#b33a22]">
                         <div className="min-w-0 px-2 lg:px-4 flex items-center">
-                            <ul className="flex items-center justify-center gap-1 flex-nowrap whitespace-nowrap w-full py-2">
+                            <ul className="flex w-full flex-nowrap items-center justify-center gap-1 whitespace-nowrap py-2">
                                 {items.map((item) => (
                                     <TopItem
                                         key={item.id}
@@ -375,10 +363,9 @@ export function SiteNav() {
                 </div>
             </nav>
 
-            <MemberModal open={memberOpen} onClose={() => setMemberOpen(false)} />
+            <MemberModal open={memberOpen} onClose={closeModal} />
         </>
     );
-
 }
 
 function TopItem({
@@ -403,10 +390,11 @@ function TopItem({
     isMobile: boolean;
 }) {
     const buttonRef = useRef<HTMLButtonElement>(null);
+
     const hasChildren = !!item.children?.length;
     const isOpen = openPath[0] === item.id;
     const topHref = item.href ?? (hasChildren ? item.children?.[0]?.href : undefined);
-    const isExternalLink = isExternal(topHref);
+    const isExternalLink = isExternalNewTabUrl(topHref);
 
     const handleMouseEnter = () => {
         if (hasChildren && !isMobile) {
@@ -417,10 +405,13 @@ function TopItem({
 
     const handleMouseLeave = (e: React.MouseEvent) => {
         if (!hasChildren || isMobile) return;
-        const related = e.relatedTarget as HTMLElement;
+
+        const related = e.relatedTarget as HTMLElement | null;
         const currentTarget = e.currentTarget as HTMLElement;
         const childMenu = currentTarget.querySelector('[role="menu"]');
+
         if (childMenu?.contains(related)) return;
+
         closeSoon();
     };
 
@@ -431,7 +422,8 @@ function TopItem({
             else setOpenPath([item.id]);
             return;
         }
-        if (isHash(topHref)) e.preventDefault();
+
+        e.preventDefault();
         onNavigate(topHref);
     };
 
@@ -443,12 +435,14 @@ function TopItem({
                 if (hasChildren) setOpenPath([item.id]);
                 else onNavigate(topHref);
                 break;
+
             case "ArrowDown":
                 if (hasChildren && !isOpen) {
                     e.preventDefault();
                     setOpenPath([item.id]);
                 }
                 break;
+
             case "Escape":
                 closeAll();
                 break;
@@ -461,8 +455,6 @@ function TopItem({
         "transition-all duration-150 " +
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50";
 
-
-
     return (
         <li className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {hasChildren ? (
@@ -472,7 +464,9 @@ function TopItem({
                     onKeyDown={handleKeyDown}
                     className={[
                         tabBase,
-                        isOpen ? "bg-white/20 text-white shadow-inner" : "text-white/95 hover:text-white hover:bg-white/10",
+                        isOpen
+                            ? "bg-white/20 text-white shadow-inner"
+                            : "text-white/95 hover:bg-white/10 hover:text-white",
                     ].join(" ")}
                     aria-haspopup="menu"
                     aria-expanded={isOpen}
@@ -480,7 +474,10 @@ function TopItem({
                 >
                     <span>{item.label}</span>
                     <ChevronDown
-                        className={["h-4 w-4 transition-transform duration-150", isOpen ? "rotate-180" : ""].join(" ")}
+                        className={[
+                            "h-4 w-4 transition-transform duration-150",
+                            isOpen ? "rotate-180" : "",
+                        ].join(" ")}
                         aria-hidden="true"
                     />
                 </button>
@@ -490,13 +487,15 @@ function TopItem({
                     onClick={handleClick}
                     className={[
                         tabBase,
-                        "text-white/95 hover:text-white hover:bg-white/10",
+                        "text-white/95 hover:bg-white/10 hover:text-white",
                     ].join(" ")}
                     target={isExternalLink ? "_blank" : undefined}
                     rel={isExternalLink ? "noopener noreferrer" : undefined}
                 >
                     {item.label}
-                    {isExternalLink && <ExternalLink className="h-4 w-4 opacity-70" aria-hidden="true" />}
+                    {isExternalLink && (
+                        <ExternalLink className="h-4 w-4 opacity-70" aria-hidden="true" />
+                    )}
                 </a>
             )}
 
@@ -553,7 +552,6 @@ function FlyoutMenu({
 
     const [enteredFromBottom, setEnteredFromBottom] = useState(false);
     const enterTimeoutRef = useRef<number | null>(null);
-
     const [positionClass, setPositionClass] = useState("left-0");
 
     useEffect(() => {
@@ -564,8 +562,11 @@ function FlyoutMenu({
         const viewportWidth = window.innerWidth;
         const spaceOnRight = viewportWidth - triggerRect.right;
 
-        if (spaceOnRight < menuWidth && triggerRect.left > menuWidth) setPositionClass("right-0");
-        else setPositionClass("left-0");
+        if (spaceOnRight < menuWidth && triggerRect.left > menuWidth) {
+            setPositionClass("right-0");
+        } else {
+            setPositionClass("left-0");
+        }
     }, [isMobile, triggerRef, isVisible]);
 
     const handleKeyNavigation = useCallback(
@@ -573,23 +574,33 @@ function FlyoutMenu({
             const menuItems = menuRef.current?.querySelectorAll<HTMLElement>("a, button");
             if (!menuItems?.length) return;
 
-            const currentIndex = Array.from(menuItems).findIndex((item) => item === document.activeElement);
+            const currentIndex = Array.from(menuItems).findIndex(
+                (item) => item === document.activeElement
+            );
 
             switch (e.key) {
                 case "ArrowDown":
                     e.preventDefault();
-                    if (currentIndex < menuItems.length - 1) menuItems[currentIndex + 1]?.focus();
+                    if (currentIndex < menuItems.length - 1) {
+                        menuItems[currentIndex + 1]?.focus();
+                    }
                     break;
+
                 case "ArrowUp":
                     e.preventDefault();
-                    if (currentIndex > 0) menuItems[currentIndex - 1]?.focus();
-                    else triggerRef?.current?.focus();
+                    if (currentIndex > 0) {
+                        menuItems[currentIndex - 1]?.focus();
+                    } else {
+                        triggerRef?.current?.focus();
+                    }
                     break;
+
                 case "ArrowLeft":
                     e.preventDefault();
                     if (isNested) setOpenPath(parentPath.slice(0, -1));
                     else closeAll();
                     break;
+
                 case "Escape":
                     e.preventDefault();
                     closeAll();
@@ -635,6 +646,7 @@ function FlyoutMenu({
 
     useEffect(() => {
         if (!menuRef.current || !isVisible) return;
+
         const menu = menuRef.current;
 
         const handleMouseMove = (e: MouseEvent) => {
@@ -664,20 +676,20 @@ function FlyoutMenu({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={`
-        absolute origin-top transition-all duration-150 ease-out
-        ${level === 0 ? "z-50" : "z-[60]"}
-        ${level === 0
+                absolute origin-top transition-all duration-150 ease-out
+                ${level === 0 ? "z-50" : "z-[60]"}
+                ${level === 0
                     ? `top-full ${positionClass} min-w-[280px] max-w-[380px]`
                     : "left-full top-0 ml-[2px] min-w-[260px]"
                 }
-        ${level === 0 ? "mt-[-2px]" : ""}
-        ${isVisible
-                    ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                    : "opacity-0 scale-[0.98] translate-y-1 pointer-events-none"
+                ${level === 0 ? "mt-[-2px]" : ""}
+                ${isVisible
+                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-1 scale-[0.98] opacity-0"
                 }
-        ${isMobile ? "fixed inset-x-4 top-20 max-h-[70vh] overflow-y-auto" : ""}
-        ${enteredFromBottom ? "enter-from-bottom" : ""}
-      `}
+                ${isMobile ? "fixed inset-x-4 top-20 max-h-[70vh] overflow-y-auto" : ""}
+                ${enteredFromBottom ? "enter-from-bottom" : ""}
+            `}
             style={{
                 animation: isMobile && isVisible ? "slideInUp 0.2s ease-out" : "none",
                 ...(isNested && { marginTop: "-4px" }),
@@ -686,27 +698,32 @@ function FlyoutMenu({
             {level === 0 && !isMobile && (
                 <div
                     className={`
-            absolute -top-1 h-2 w-2 rotate-45 bg-white
-            ${positionClass === "right-0" ? "right-4" : "left-4"}
-          `}
+                        absolute -top-1 h-2 w-2 rotate-45 bg-white
+                        ${positionClass === "right-0" ? "right-4" : "left-4"}
+                    `}
                 />
             )}
 
-            {level === 0 && !isMobile && <div className="absolute -top-2 left-0 right-0 h-2 bg-transparent" />}
-            {isNested && !isMobile && <div className="absolute -left-1 top-0 bottom-0 w-1 bg-transparent" />}
+            {level === 0 && !isMobile && (
+                <div className="absolute -top-2 left-0 right-0 h-2 bg-transparent" />
+            )}
+
+            {isNested && !isMobile && (
+                <div className="absolute -left-1 top-0 bottom-0 w-1 bg-transparent" />
+            )}
 
             <div
                 className={`
-          rounded-lg bg-white shadow-lg ring-1 ring-black/10
-          ${level === 0 ? "border-t border-red-600" : ""}
-          ${isNested ? "shadow-xl" : ""}
-        `}
+                    rounded-lg bg-white shadow-lg ring-1 ring-black/10
+                    ${level === 0 ? "border-t border-red-600" : ""}
+                    ${isNested ? "shadow-xl" : ""}
+                `}
             >
                 <div className="py-1.5">
                     {nodes.map((node) => {
                         const hasChildren = !!node.children?.length;
                         const nodePath = [...parentPath, node.id];
-                        const isNodeExternal = isExternal(node.href);
+                        const isNodeExternal = isExternalNewTabUrl(node.href);
                         const Icon = hasChildren ? ChevronRight : ExternalLink;
 
                         return (
@@ -722,20 +739,21 @@ function FlyoutMenu({
                                 <a
                                     href={node.href || "#"}
                                     className={`
-                    flex items-center justify-between px-4 py-2.5
-                    text-sm font-medium text-gray-900 transition-colors duration-150
-                    hover:bg-red-50
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
-                    ${hasChildren ? "pr-3" : ""}
-                    ${isNested ? "pl-5" : ""}
-                  `}
+                                        flex items-center justify-between px-4 py-2.5
+                                        text-sm font-medium text-gray-900 transition-colors duration-150
+                                        hover:bg-red-50
+                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
+                                        ${hasChildren ? "pr-3" : ""}
+                                        ${isNested ? "pl-5" : ""}
+                                    `}
                                     onClick={(e) => {
                                         if (hasChildren && !isMobile) {
                                             e.preventDefault();
                                             setOpenPath(nodePath);
                                             return;
                                         }
-                                        if (isHash(node.href) || isNodeExternal) e.preventDefault();
+
+                                        e.preventDefault();
                                         onNavigate(node.href);
                                     }}
                                     target={isNodeExternal ? "_blank" : undefined}
@@ -752,7 +770,7 @@ function FlyoutMenu({
                                     </div>
 
                                     {(hasChildren || isNodeExternal) && (
-                                        <Icon className="h-3.5 w-3.5 text-gray-400 group-hover:text-red-600 transition-colors" />
+                                        <Icon className="h-3.5 w-3.5 text-gray-400 transition-colors group-hover:text-red-600" />
                                     )}
                                 </a>
 
@@ -777,7 +795,11 @@ function FlyoutMenu({
             </div>
 
             {isMobile && isVisible && (
-                <div className="fixed inset-0 bg-black/20 -z-10" onClick={closeAll} aria-hidden="true" />
+                <div
+                    className="fixed inset-0 -z-10 bg-black/20"
+                    onClick={closeAll}
+                    aria-hidden="true"
+                />
             )}
         </div>
     );

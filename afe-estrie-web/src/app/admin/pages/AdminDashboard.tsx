@@ -5,7 +5,7 @@ import { AdminPanel, AdminStat } from "../ui/AdminPanel";
 import { NavManager } from "../sections/NavManager";
 import { FooterManager } from "../sections/FooterManager";
 import { CookieConsentManager } from "../sections/CookieConsentManager";
-import { MembersManager } from "../sections/members/MembersManager";
+// import { MembersManager } from "../sections/members/MembersManager";
 
 import { useAdminUser } from "../hooks/useAdminUser";
 import { signOut } from "firebase/auth";
@@ -569,18 +569,18 @@ export default function AdminDashboard() {
           </div>
         );
 
-      case "members":
-        return (
-          <div className="mx-auto max-w-8xl">
-            <AdminPanel
-              title="Membres"
-              description="Gérer les inscriptions et informations des membres"
-              right={<BackButton onClick={() => setActiveSection("overview")} />}
-            >
-              <MembersManager />
-            </AdminPanel>
-          </div>
-        );
+      // case "members":
+      //   return (
+      //     <div className="mx-auto max-w-8xl">
+      //       <AdminPanel
+      //         title="Membres"
+      //         description="Gérer les inscriptions et informations des membres"
+      //         right={<BackButton onClick={() => setActiveSection("overview")} />}
+      //       >
+      //         <MembersManager />
+      //       </AdminPanel>
+      //     </div>
+      //   );
 
       case "navigation":
         return (

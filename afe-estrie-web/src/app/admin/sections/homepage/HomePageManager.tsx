@@ -403,57 +403,112 @@ export default function HomePageManager() {
                 </SectionCard>
 
                 {/* OTHER SECTIONS */}
+                {/* ACTIVITÉS */}
                 <SectionCard
-                    title="Autres sections"
-                    description="Activités, Événements, Ressources, Partenaires, Actualités, Contact"
-                    isExpanded={expandedSections.has("otherSections")}
-                    onToggle={() => toggleSection("otherSections")}
+                    title="Activités"
+                    description="Modifier la section des activités"
+                    isExpanded={expandedSections.has("activities")}
+                    onToggle={() => toggleSection("activities")}
+                    status={homepage.activities?.enabled ? "activé" : "désactivé"}
                 >
-                    {expandedSections.has("otherSections") && (
-                        <div className="space-y-6">
-                            <SimpleBlockEditor
-                                title="Activités"
-                                icon="🎯"
-                                block={homepage.activities}
-                                onChange={(next: any) => setDraft({ ...homepage, activities: next })}
-                            />
+                    {expandedSections.has("activities") && (
+                        <SimpleBlockEditor
+                            title="Activités"
+                            icon="🎯"
+                            block={homepage.activities}
+                            onChange={(next: any) => setDraft({ ...homepage, activities: next })}
+                        />
+                    )}
+                </SectionCard>
 
-                            <SimpleBlockEditor
-                                title="Événements"
-                                icon="📅"
-                                kind="events"
-                                block={homepage.events}
-                                onChange={(next: any) => setDraft({ ...homepage, events: next })}
-                            />
+                {/* ÉVÉNEMENTS */}
+                <SectionCard
+                    title="Événements"
+                    description="Modifier la section des événements"
+                    isExpanded={expandedSections.has("events")}
+                    onToggle={() => toggleSection("events")}
+                    status={homepage.events?.enabled ? "activé" : "désactivé"}
+                >
+                    {expandedSections.has("events") && (
+                        <SimpleBlockEditor
+                            title="Événements"
+                            icon="📅"
+                            kind="events"
+                            block={homepage.events}
+                            onChange={(next: any) => setDraft({ ...homepage, events: next })}
+                        />
+                    )}
+                </SectionCard>
 
-                            <SimpleBlockEditor
-                                title="Ressources"
-                                icon="📚"
-                                kind="resources"
-                                block={homepage.resources}
-                                onChange={(next: any) => setDraft({ ...homepage, resources: next })}
-                            />
+                {/* RESSOURCES */}
+                <SectionCard
+                    title="Ressources"
+                    description="Modifier la section des ressources"
+                    isExpanded={expandedSections.has("resources")}
+                    onToggle={() => toggleSection("resources")}
+                    status={homepage.resources?.enabled ? "activé" : "désactivé"}
+                >
+                    {expandedSections.has("resources") && (
+                        <SimpleBlockEditor
+                            title="Ressources"
+                            icon="📚"
+                            kind="resources"
+                            block={homepage.resources}
+                            onChange={(next: any) => setDraft({ ...homepage, resources: next })}
+                        />
+                    )}
+                </SectionCard>
 
-                            <PartnersEditor
-                                block={homepage.partners}
-                                onChange={(next: any) => setDraft({ ...homepage, partners: next })}
-                            />
+                {/* PARTENAIRES */}
+                <SectionCard
+                    title="Partenaires"
+                    description="Gérer les partenaires et logos"
+                    isExpanded={expandedSections.has("partners")}
+                    onToggle={() => toggleSection("partners")}
+                    status={homepage.partners?.enabled ? "activé" : "désactivé"}
+                >
+                    {expandedSections.has("partners") && (
+                        <PartnersEditor
+                            block={homepage.partners}
+                            onChange={(next: any) => setDraft({ ...homepage, partners: next })}
+                        />
+                    )}
+                </SectionCard>
 
-                            <NewsEditor
-                                block={homepage.news}
-                                onChange={(next) =>
-                                    setDraft((d) => (d ? ({ ...d, news: next } as HomePageCMS) : d))
-                                }
-                                onSave={publish}
-                            />
+                {/* ACTUALITÉS */}
+                <SectionCard
+                    title="Actualités"
+                    description="Gérer les nouvelles et articles"
+                    isExpanded={expandedSections.has("news")}
+                    onToggle={() => toggleSection("news")}
+                    status={homepage.news?.enabled ? "activé" : "désactivé"}
+                >
+                    {expandedSections.has("news") && (
+                        <NewsEditor
+                            block={homepage.news}
+                            onChange={(next) =>
+                                setDraft((d) => (d ? ({ ...d, news: next } as HomePageCMS) : d))
+                            }
+                            onSave={publish}
+                        />
+                    )}
+                </SectionCard>
 
-                            <ContactEditor
-                                block={(homepage as any).contact}
-                                onChange={(next: any) =>
-                                    setDraft({ ...(homepage as any), contact: next })
-                                }
-                            />
-                        </div>
+                {/* CONTACT */}
+                <SectionCard
+                    title="Contact"
+                    description="Modifier les informations de contact"
+                    isExpanded={expandedSections.has("contact")}
+                    onToggle={() => toggleSection("contact")}
+                    status={(homepage as any).contact?.enabled ? "activé" : "désactivé"}
+                >
+                    {expandedSections.has("contact") && (
+                        <ContactEditor
+                            block={(homepage as any).contact}
+                            onChange={(next: any) =>
+                                setDraft({ ...(homepage as any), contact: next })
+                            }
+                        />
                     )}
                 </SectionCard>
 

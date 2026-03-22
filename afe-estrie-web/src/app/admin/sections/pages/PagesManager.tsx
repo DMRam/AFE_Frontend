@@ -1,21 +1,32 @@
 import { useEffect, useState } from "react";
 import type { PageDocExt, AnySection, CategoryOption } from "./types";
 
+import { Save, CheckCircle2, XCircle, Info } from "lucide-react";
 
-
-import { Save, CheckCircle2, XCircle } from "lucide-react";
-
-
-import { listPages, pageDocIdFromPageId, getPageByDocId, patchPage, removePage } from "../../../../services/pageRepo";
+import {
+    listPages,
+    pageDocIdFromPageId,
+    getPageByDocId,
+    patchPage,
+    removePage,
+} from "../../../../services/pageRepo";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { PageDetailsForm } from "./components/PageDetailsForm";
 import { PagesSidebar } from "./components/PagesSidebar";
 import { SectionsEditor } from "./components/SectionsEditor";
 import { SectionEditModal } from "./components/SectionEditModal";
+import { collection, doc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
+import { db } from "../../../../services/firebase";
 
 function s(v: any) {
     return String(v ?? "").trim();
 }
+
+type ToastState = {
+    type: "success" | "error" | "info";
+    title?: string;
+    message: string;
+} | null;
 
 export default function PagesManager() {
     // -------- list state
@@ -40,6 +51,7 @@ export default function PagesManager() {
 
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [toast, setToast] = useState<ToastState>(null);
 
     // -------- delete modal state
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -51,7 +63,7 @@ export default function PagesManager() {
     const [draft, setDraft] = useState<AnySection | null>(null);
 
     // -------- categories (simple default)
-    const [categories, setCategories] = useState<CategoryOption[]>([
+    const DEFAULT_CATEGORIES: CategoryOption[] = [
         { id: "", label: "Non classée" },
         { id: "accueil", label: "Accueil" },
         { id: "a-propos", label: "À propos" },
@@ -60,28 +72,57 @@ export default function PagesManager() {
         { id: "faq", label: "FAQ" },
         { id: "contact", label: "Contact" },
         { id: "politiques", label: "Politique & confidentialité" },
-    ]);
+    ];
+
+    const [categories, setCategories] = useState<CategoryOption[]>(DEFAULT_CATEGORIES);
 
     const [seoTitle, setSeoTitle] = useState("");
     const [seoDescription, setSeoDescription] = useState("");
     const [seoImage, setSeoImage] = useState("");
 
-    function addCategory(c: CategoryOption) {
+
+    useEffect(() => {
+        void loadCategories();
+    }, []);
+
+    async function loadCategories() {
+        const snap = await getDocs(query(collection(db, "pageCategories"), orderBy("label")));
+        const custom = snap.docs.map((d) => ({
+            id: d.id,
+            label: String(d.data().label || d.id),
+        }));
+
+        setCategories([
+            ...DEFAULT_CATEGORIES,
+            ...custom.filter((c) => !DEFAULT_CATEGORIES.some((d) => d.id === c.id)),
+        ]);
+    }
+
+    async function addCategory(c: CategoryOption) {
+        await setDoc(doc(db, "pageCategories", c.id), {
+            label: c.label,
+            createdAt: Date.now(),
+        });
+
         setCategories((prev) => {
             if (prev.some((x) => x.id === c.id)) return prev;
             return [...prev, c].sort((a, b) => a.label.localeCompare(b.label, "fr-CA"));
         });
     }
 
-
+    useEffect(() => {
+        if (!toast) return;
+        const t = window.setTimeout(() => setToast(null), 2800);
+        return () => window.clearTimeout(t);
+    }, [toast]);
 
     // -------- list loader
     async function reloadPagesList(selectFirst = false) {
         setLoadingList(true);
         setError("");
+
         try {
             const items = (await listPages()) as PageDocExt[];
-            // sort by title
             const sorted = [...items].sort((a, b) => s(a.title).localeCompare(s(b.title)));
             setPages(sorted);
 
@@ -112,6 +153,7 @@ export default function PagesManager() {
             setLoadingPage(true);
             setError("");
             setSuccess("");
+
             try {
                 const p = (await getPageByDocId(selectedDocId)) as PageDocExt | null;
 
@@ -131,7 +173,11 @@ export default function PagesManager() {
                 setSlug(p.slug ?? "");
                 setPublished(p.published !== false);
                 setCategoryId((p as any).categoryId ?? "");
-                setSections(((p as any).sections ?? []) as AnySection[]);
+                setSections((((p as any).sections ?? []) as AnySection[]) || []);
+
+                setSeoTitle((p as any).seoTitle ?? "");
+                setSeoDescription((p as any).seoDescription ?? "");
+                setSeoImage((p as any).seoImage ?? "");
             } catch (e: any) {
                 setError(`Erreur de chargement: ${e?.message ?? "Inconnue"}`);
             } finally {
@@ -153,16 +199,30 @@ export default function PagesManager() {
         try {
             await patchPage(selectedDocId, {
                 title: s(title),
-                slug: slug,
+                slug,
                 published,
                 categoryId: categoryId || "",
                 sections,
+                seoTitle: s(seoTitle),
+                seoDescription: s(seoDescription),
+                seoImage: s(seoImage),
             } as any);
 
             setSuccess("Enregistré.");
+            setToast({
+                type: "success",
+                title: "Page enregistrée",
+                message: "Les modifications ont bien été sauvegardées.",
+            });
+
             void reloadPagesList(false);
         } catch (e: any) {
             setError(`Impossible d’enregistrer. ${e?.message ?? ""}`.trim());
+            setToast({
+                type: "error",
+                title: "Erreur",
+                message: "Impossible d’enregistrer les modifications.",
+            });
         } finally {
             setSaving(false);
         }
@@ -189,10 +249,20 @@ export default function PagesManager() {
         try {
             await removePage(pageToDelete);
             setSuccess("Page supprimée.");
+            setToast({
+                type: "success",
+                title: "Page supprimée",
+                message: "La page a été supprimée avec succès.",
+            });
             closeDelete();
             await reloadPagesList(true);
         } catch (e: any) {
             setError(`Impossible de supprimer. ${e?.message ?? ""}`.trim());
+            setToast({
+                type: "error",
+                title: "Erreur",
+                message: "Impossible de supprimer la page.",
+            });
         } finally {
             setDeleting(false);
         }
@@ -217,7 +287,6 @@ export default function PagesManager() {
                 : type === "richText"
                     ? {
                         ...base,
-                        // legacy-friendly
                         content: "Écrivez votre contenu ici…",
                         body: "Écrivez votre contenu ici…",
                         heading: "",
@@ -226,16 +295,38 @@ export default function PagesManager() {
                     : {
                         ...base,
                         title: "Nouvelle section",
-                        // legacy-friendly
                         content: "Écrivez votre texte ici…",
                         body: "Écrivez votre texte ici…",
                         imageUrl: "",
                         imageAlt: "",
                         imageSide: "right",
                         variant: "default",
+                        imageSize: "md",
+                        imageObjectFit: "cover",
                     };
 
         setSections((prev) => [...prev, next]);
+
+        setToast({
+            type: "success",
+            title: "Section ajoutée",
+            message: "Une nouvelle section a été ajoutée en bas de la page.",
+        });
+
+        window.setTimeout(() => {
+            const target =
+                document.getElementById(`section-card-${id}`) ??
+                document.querySelector(`[data-section-id="${id}"]`);
+
+            if (target instanceof HTMLElement) {
+                target.scrollIntoView({ behavior: "smooth", block: "center" });
+            } else {
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: "smooth",
+                });
+            }
+        }, 140);
     }
 
     function toggleEnabled(i: number) {
@@ -249,7 +340,20 @@ export default function PagesManager() {
     }
 
     function removeSection(i: number) {
-        setSections((prev) => prev.filter((_, idx) => idx !== i));
+        setSections((prev) => {
+            const removed = prev[i];
+            const next = prev.filter((_, idx) => idx !== i);
+
+            setToast({
+                type: "info",
+                title: "Section supprimée",
+                message: removed?.type
+                    ? `La section « ${removed.type} » a été retirée.`
+                    : "La section a été retirée.",
+            });
+
+            return next;
+        });
     }
 
     function moveUp(i: number) {
@@ -277,8 +381,13 @@ export default function PagesManager() {
     function openEdit(i: number) {
         const sec = sections[i];
         if (!sec) return;
+
         setEditIndex(i);
-        setDraft(structuredClone ? structuredClone(sec) : JSON.parse(JSON.stringify(sec)));
+        setDraft(
+            typeof structuredClone === "function"
+                ? structuredClone(sec)
+                : JSON.parse(JSON.stringify(sec))
+        );
         setEditOpen(true);
     }
 
@@ -290,33 +399,82 @@ export default function PagesManager() {
 
     function applyEdit() {
         if (editIndex == null || !draft) return;
+
         setSections((prev) => {
             const next = [...prev];
             next[editIndex] = draft;
             return next;
         });
+
+        setToast({
+            type: "success",
+            title: "Section mise à jour",
+            message: "Les modifications de la section ont été appliquées.",
+        });
+
         closeEdit();
     }
 
     return (
         <div className="space-y-6">
+            {/* Floating toast */}
+            {toast && (
+                <div className="fixed bottom-5 right-5 z-[100] max-w-sm">
+                    <div
+                        className={[
+                            "rounded-2xl border bg-white/95 px-4 py-3 shadow-xl backdrop-blur",
+                            toast.type === "success"
+                                ? "border-emerald-200"
+                                : toast.type === "error"
+                                    ? "border-red-200"
+                                    : "border-blue-200",
+                        ].join(" ")}
+                    >
+                        <div className="flex items-start gap-3">
+                            {toast.type === "success" ? (
+                                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                            ) : toast.type === "error" ? (
+                                <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+                            ) : (
+                                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                                {toast.title ? (
+                                    <div className="text-sm font-semibold text-gray-900">{toast.title}</div>
+                                ) : null}
+                                <div className="mt-0.5 text-sm text-gray-600">{toast.message}</div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setToast(null)}
+                                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                aria-label="Fermer la notification"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Alerts */}
             {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-                    <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
                     <div className="text-sm text-red-700">{error}</div>
                 </div>
             )}
 
             {success && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
                     <div className="text-sm text-emerald-700">{success}</div>
                 </div>
             )}
 
             <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-                {/* Sidebar */}
                 <PagesSidebar
                     pages={pages}
                     loading={loadingList}
@@ -328,8 +486,6 @@ export default function PagesManager() {
                     onCreated={(docId) => setSelectedDocId(docId)}
                 />
 
-
-                {/* Editor */}
                 <div className="rounded-xl border border-gray-200 bg-white">
                     <div className="border-b border-gray-200 px-4 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -348,7 +504,7 @@ export default function PagesManager() {
                                     "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                                     canSave
                                         ? "bg-blue-600 text-white hover:bg-blue-700"
-                                        : "bg-gray-200 text-gray-400 cursor-not-allowed",
+                                        : "cursor-not-allowed bg-gray-200 text-gray-400",
                                 ].join(" ")}
                             >
                                 <Save className="h-4 w-4" />
@@ -372,7 +528,7 @@ export default function PagesManager() {
                             </div>
                         </div>
                     ) : (
-                        <div className="p-4 space-y-6">
+                        <div className="space-y-6 p-4">
                             <PageDetailsForm
                                 title={title}
                                 setTitle={setTitle}
@@ -383,7 +539,6 @@ export default function PagesManager() {
                                 setCategoryId={setCategoryId}
                                 categories={categories}
                                 onAddCategory={addCategory}
-
                                 seoTitle={seoTitle}
                                 setSeoTitle={setSeoTitle}
                                 seoDescription={seoDescription}
@@ -391,7 +546,6 @@ export default function PagesManager() {
                                 seoImage={seoImage}
                                 setSeoImage={setSeoImage}
                             />
-
 
                             <SectionsEditor
                                 sections={sections}
@@ -404,13 +558,11 @@ export default function PagesManager() {
                                 onMoveUp={moveUp}
                                 onMoveDown={moveDown}
                             />
-
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Delete confirm */}
             <DeleteConfirmModal
                 open={deleteConfirmOpen}
                 title="Supprimer la page"
@@ -422,8 +574,6 @@ export default function PagesManager() {
                 onCancel={closeDelete}
             />
 
-
-            {/* Section edit modal */}
             <SectionEditModal
                 open={editOpen}
                 section={draft}
