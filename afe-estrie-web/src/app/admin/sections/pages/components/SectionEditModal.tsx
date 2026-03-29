@@ -26,14 +26,13 @@ export function SectionEditModal({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
-  // UX: reset transient upload state when section changes or modal closes
   useEffect(() => {
     if (!open) {
       setUploading(false);
       setUploadError("");
       return;
     }
-    // modal opened => clear old errors when switching sections
+
     setUploadError("");
   }, [open, section?.id]);
 
@@ -51,7 +50,7 @@ export function SectionEditModal({
   }
 
   function handleClose() {
-    if (uploading) return;  
+    if (uploading) return;
     setUploadError("");
     setUploading(false);
     onCancel();
@@ -60,47 +59,51 @@ export function SectionEditModal({
   return (
     <ModalShell open={open} title={title} onClose={handleClose}>
       {!section ? null : (
-        <div className="space-y-5">
-          {uploadError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex gap-2">
-              <AlertCircle className="h-4 w-4 mt-0.5" />
-              <span>{uploadError}</span>
+        <div className="flex max-h-[80vh] flex-col">
+          <div className="flex-1 overflow-y-auto px-1">
+            <div className="space-y-5 pb-4">
+              {uploadError && (
+                <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={(section as any)?.enabled !== false}
+                  onChange={(e) => toggleEnabled(e.target.checked)}
+                  disabled={uploading}
+                />
+                <span className="font-medium text-gray-900">Section active</span>
+              </label>
+
+              <HeroEditor
+                section={section}
+                onChange={(next) => onChange(next)}
+                uploading={uploading}
+                setUploading={setUploading}
+                setUploadError={setUploadError}
+              />
+
+              <RichTextEditor
+                section={section}
+                onChange={(next) => onChange(next)}
+              />
+
+              <SplitEditor
+                section={section}
+                onChange={(next) => onChange(next)}
+                uploading={uploading}
+                setUploading={setUploading}
+                setUploadError={setUploadError}
+              />
             </div>
-          )}
+          </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              checked={(section as any)?.enabled !== false}
-              onChange={(e) => toggleEnabled(e.target.checked)}
-              disabled={uploading}
-            />
-            <span className="font-medium text-gray-900">Section active</span>
-          </label>
-
-          {/* HERO */}
-          <HeroEditor
-            section={section}
-            onChange={(next) => onChange(next)}
-            uploading={uploading}
-            setUploading={setUploading}
-            setUploadError={setUploadError}
-          />
-
-          {/* RICH TEXT (uses RichTextInput inside RichTextEditor) */}
-          <RichTextEditor section={section} onChange={(next) => onChange(next)} />
-
-          {/* SPLIT (uses RichTextInput inside SplitEditor for body/content) */}
-          <SplitEditor
-            section={section}
-            onChange={(next) => onChange(next)}
-            uploading={uploading}
-            setUploading={setUploading}
-            setUploadError={setUploadError}
-          />
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="sticky bottom-0 z-10 mt-4 flex items-center justify-end gap-3 border-t border-gray-200 bg-white/95 px-1 pt-4 backdrop-blur">
             <button
               type="button"
               className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"

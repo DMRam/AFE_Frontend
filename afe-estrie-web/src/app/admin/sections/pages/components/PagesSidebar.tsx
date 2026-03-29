@@ -43,21 +43,27 @@ export function PagesSidebar({
       if (status === "published" && p.published === false) return false;
       if (status === "draft" && p.published !== false) return false;
 
-      if (cat && categoryId !== cat) return false;
+      if (cat === "__uncat__") {
+        if (categoryId) return false;
+      } else if (cat && categoryId !== cat) {
+        return false;
+      }
 
       return true;
     });
   }, [pages, q, status, cat]);
 
-  // group by category label
   const grouped = useMemo(() => {
     const map = new Map<string, PageDoc[]>();
+
     for (const p of filtered as any[]) {
       const cid = String(p.categoryId ?? "");
       const key = cid || "__uncat__";
+
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(p);
     }
+
     return map;
   }, [filtered]);
 
@@ -68,16 +74,19 @@ export function PagesSidebar({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold text-gray-900">Pages</div>
-          <div className="text-xs text-gray-500">{pages.length} page(s)</div>
+    <div className="flex h-[70vh] min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="shrink-0 border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">Pages</div>
+            <div className="text-xs text-gray-500">{pages.length} page(s)</div>
+          </div>
+
+          <NewPageButton onRefreshList={onRefreshList} onCreated={onCreated} />
         </div>
-        <NewPageButton onRefreshList={onRefreshList} onCreated={onCreated} />
       </div>
 
-      <div className="p-3 space-y-2 border-b border-gray-100">
+      <div className="sticky top-0 z-10 shrink-0 space-y-2 border-b border-gray-100 bg-white p-3">
         <input
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="Rechercher une page…"
@@ -111,29 +120,28 @@ export function PagesSidebar({
           </select>
         </div>
 
-        <div className="text-xs text-gray-500">
-          {filtered.length} résultat(s)
-        </div>
+        <div className="text-xs text-gray-500">{filtered.length} résultat(s)</div>
       </div>
 
-      {loading ? (
-        <div className="p-6 text-center">
-          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-          <div className="mt-2 text-sm text-gray-500">Chargement…</div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="p-6 text-center">
-          <div className="text-sm text-gray-500">Aucune page</div>
-        </div>
-      ) : (
-        <div className="max-h-[70vh] overflow-y-auto">
-          {[...grouped.keys()]
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="p-6 text-center">
+            <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+            <div className="mt-2 text-sm text-gray-500">Chargement…</div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-6 text-center">
+            <div className="text-sm text-gray-500">Aucune page</div>
+          </div>
+        ) : (
+          [...grouped.keys()]
             .sort((a, b) => categoryLabel(a).localeCompare(categoryLabel(b), "fr-CA"))
             .map((cid) => {
               const items = grouped.get(cid)!;
+
               return (
-                <div key={cid} className="border-t border-gray-100">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-50">
+                <div key={cid} className="border-t border-gray-100 first:border-t-0">
+                  <div className="sticky top-0 z-[1] bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700">
                     {categoryLabel(cid)}
                   </div>
 
@@ -146,30 +154,32 @@ export function PagesSidebar({
                         <div
                           key={p.id}
                           className={[
-                            "flex items-start justify-between p-3 hover:bg-gray-50 transition-colors",
+                            "flex items-start justify-between gap-2 p-3 transition-colors hover:bg-gray-50",
                             active ? "bg-blue-50" : "",
                           ].join(" ")}
                         >
                           <button
                             type="button"
                             onClick={() => onSelect(docId)}
-                            className="flex-1 text-left min-w-0"
+                            className="min-w-0 flex-1 text-left"
                           >
                             <div className="flex items-center gap-2">
-                              <div className="text-sm font-medium text-gray-900 truncate">
+                              <div className="truncate text-sm font-medium text-gray-900">
                                 {p.title || "Sans titre"}
                               </div>
+
                               {p.published === false ? (
-                                <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                                <span className="shrink-0 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
                                   Brouillon
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                                <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
                                   Publiée
                                 </span>
                               )}
                             </div>
-                            <div className="mt-1 text-xs text-gray-500 truncate">
+
+                            <div className="mt-1 truncate text-xs text-gray-500">
                               /{p.slug || "—"}
                             </div>
                           </button>
@@ -177,7 +187,7 @@ export function PagesSidebar({
                           <button
                             type="button"
                             onClick={() => onRequestDelete(docId)}
-                            className="ml-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
                             title="Supprimer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -188,9 +198,9 @@ export function PagesSidebar({
                   </div>
                 </div>
               );
-            })}
-        </div>
-      )}
+            })
+        )}
+      </div>
     </div>
   );
 }

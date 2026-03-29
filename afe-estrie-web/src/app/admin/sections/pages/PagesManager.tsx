@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PageDocExt, AnySection, CategoryOption } from "./types";
 
-import { Save, CheckCircle2, XCircle, Info } from "lucide-react";
+import { Save, CheckCircle2, XCircle, Info, AlertCircle, Clock3 } from "lucide-react";
 
 import {
     listPages,
@@ -22,11 +22,57 @@ function s(v: any) {
     return String(v ?? "").trim();
 }
 
+function deepClone<T>(value: T): T {
+    if (typeof structuredClone === "function") return structuredClone(value);
+    return JSON.parse(JSON.stringify(value));
+}
+
+function stableStringify(value: unknown) {
+    return JSON.stringify(value);
+}
+
+function formatLastSaved(timestamp: number | null) {
+    if (!timestamp) return "";
+    try {
+        return new Intl.DateTimeFormat("fr-CA", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        }).format(new Date(timestamp));
+    } catch {
+        return "";
+    }
+}
+
 type ToastState = {
     type: "success" | "error" | "info";
     title?: string;
     message: string;
 } | null;
+
+type SavedSnapshot = {
+    title: string;
+    slug: string;
+    published: boolean;
+    categoryId: string;
+    sections: AnySection[];
+    seoTitle: string;
+    seoDescription: string;
+    seoImage: string;
+};
+
+function buildSnapshot(input: SavedSnapshot): SavedSnapshot {
+    return {
+        title: s(input.title),
+        slug: String(input.slug ?? ""),
+        published: input.published !== false,
+        categoryId: String(input.categoryId ?? ""),
+        sections: deepClone(input.sections ?? []),
+        seoTitle: s(input.seoTitle),
+        seoDescription: s(input.seoDescription),
+        seoImage: s(input.seoImage),
+    };
+}
 
 export default function PagesManager() {
     // -------- list state
@@ -52,6 +98,9 @@ export default function PagesManager() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [toast, setToast] = useState<ToastState>(null);
+
+    const [savedSnapshot, setSavedSnapshot] = useState<SavedSnapshot | null>(null);
+    const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
     // -------- delete modal state
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -79,7 +128,6 @@ export default function PagesManager() {
     const [seoTitle, setSeoTitle] = useState("");
     const [seoDescription, setSeoDescription] = useState("");
     const [seoImage, setSeoImage] = useState("");
-
 
     useEffect(() => {
         void loadCategories();
@@ -164,20 +212,47 @@ export default function PagesManager() {
                     setPublished(true);
                     setCategoryId("");
                     setSections([]);
+                    setSeoTitle("");
+                    setSeoDescription("");
+                    setSeoImage("");
+                    setSavedSnapshot(null);
+                    setLastSavedAt(null);
                     setError("Page introuvable.");
                     return;
                 }
 
-                setPage(p);
-                setTitle(p.title ?? "");
-                setSlug(p.slug ?? "");
-                setPublished(p.published !== false);
-                setCategoryId((p as any).categoryId ?? "");
-                setSections((((p as any).sections ?? []) as AnySection[]) || []);
+                const nextTitle = p.title ?? "";
+                const nextSlug = p.slug ?? "";
+                const nextPublished = p.published !== false;
+                const nextCategoryId = (p as any).categoryId ?? "";
+                const nextSections = ((((p as any).sections ?? []) as AnySection[]) || []);
+                const nextSeoTitle = (p as any).seoTitle ?? "";
+                const nextSeoDescription = (p as any).seoDescription ?? "";
+                const nextSeoImage = (p as any).seoImage ?? "";
 
-                setSeoTitle((p as any).seoTitle ?? "");
-                setSeoDescription((p as any).seoDescription ?? "");
-                setSeoImage((p as any).seoImage ?? "");
+                setPage(p);
+                setTitle(nextTitle);
+                setSlug(nextSlug);
+                setPublished(nextPublished);
+                setCategoryId(nextCategoryId);
+                setSections(nextSections);
+                setSeoTitle(nextSeoTitle);
+                setSeoDescription(nextSeoDescription);
+                setSeoImage(nextSeoImage);
+
+                setSavedSnapshot(
+                    buildSnapshot({
+                        title: nextTitle,
+                        slug: nextSlug,
+                        published: nextPublished,
+                        categoryId: nextCategoryId,
+                        sections: nextSections,
+                        seoTitle: nextSeoTitle,
+                        seoDescription: nextSeoDescription,
+                        seoImage: nextSeoImage,
+                    })
+                );
+                setLastSavedAt(null);
             } catch (e: any) {
                 setError(`Erreur de chargement: ${e?.message ?? "Inconnue"}`);
             } finally {
@@ -186,11 +261,50 @@ export default function PagesManager() {
         })();
     }, [selectedDocId]);
 
-    // -------- save
-    const canSave = !!selectedDocId && !!page && !saving && !loadingPage;
+    const currentSnapshot = useMemo(
+        () =>
+            buildSnapshot({
+                title,
+                slug,
+                published,
+                categoryId,
+                sections,
+                seoTitle,
+                seoDescription,
+                seoImage,
+            }),
+        [title, slug, published, categoryId, sections, seoTitle, seoDescription, seoImage]
+    );
 
+    const isDirty = useMemo(() => {
+        if (!savedSnapshot) return false;
+        return stableStringify(currentSnapshot) !== stableStringify(savedSnapshot);
+    }, [currentSnapshot, savedSnapshot]);
+
+    useEffect(() => {
+        if (isDirty && success) {
+            setSuccess("");
+        }
+    }, [isDirty, success]);
+
+    const canSave = !!selectedDocId && !!page && !saving && !loadingPage && isDirty;
+
+    const saveState = saving ? "saving" : isDirty ? "dirty" : "saved";
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (!isDirty) return;
+            e.preventDefault();
+            e.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [isDirty]);
+
+    // -------- save
     async function onSave() {
-        if (!selectedDocId || !page) return;
+        if (!selectedDocId || !page || !isDirty) return;
 
         setSaving(true);
         setError("");
@@ -207,6 +321,9 @@ export default function PagesManager() {
                 seoDescription: s(seoDescription),
                 seoImage: s(seoImage),
             } as any);
+
+            setSavedSnapshot(currentSnapshot);
+            setLastSavedAt(Date.now());
 
             setSuccess("Enregistré.");
             setToast({
@@ -308,9 +425,9 @@ export default function PagesManager() {
         setSections((prev) => [...prev, next]);
 
         setToast({
-            type: "success",
-            title: "Section ajoutée",
-            message: "Une nouvelle section a été ajoutée en bas de la page.",
+            type: "info",
+            title: "Modification non enregistrée",
+            message: "La nouvelle section a été ajoutée. N’oubliez pas d’enregistrer.",
         });
 
         window.setTimeout(() => {
@@ -346,10 +463,10 @@ export default function PagesManager() {
 
             setToast({
                 type: "info",
-                title: "Section supprimée",
+                title: "Modification non enregistrée",
                 message: removed?.type
-                    ? `La section « ${removed.type} » a été retirée.`
-                    : "La section a été retirée.",
+                    ? `La section « ${removed.type} » a été retirée. Enregistrez pour confirmer.`
+                    : "La section a été retirée. Enregistrez pour confirmer.",
             });
 
             return next;
@@ -357,13 +474,22 @@ export default function PagesManager() {
     }
 
     function moveUp(i: number) {
+        setSuccess("");
+
         setSections((prev) => {
             if (i <= 0) return prev;
             const next = [...prev];
             const item = next[i];
+            if (!item) return prev;
             next.splice(i, 1);
             next.splice(i - 1, 0, item);
             return next;
+        });
+
+        setToast({
+            type: "info",
+            title: "Ordre modifié",
+            message: "La section a été déplacée vers le haut. Enregistrez pour confirmer.",
         });
     }
 
@@ -372,9 +498,16 @@ export default function PagesManager() {
             if (i >= prev.length - 1) return prev;
             const next = [...prev];
             const item = next[i];
+            if (!item) return prev;
             next.splice(i, 1);
             next.splice(i + 1, 0, item);
             return next;
+        });
+
+        setToast({
+            type: "info",
+            title: "Ordre modifié",
+            message: "La section a été déplacée vers le bas. Enregistrez pour confirmer.",
         });
     }
 
@@ -383,11 +516,7 @@ export default function PagesManager() {
         if (!sec) return;
 
         setEditIndex(i);
-        setDraft(
-            typeof structuredClone === "function"
-                ? structuredClone(sec)
-                : JSON.parse(JSON.stringify(sec))
-        );
+        setDraft(deepClone(sec));
         setEditOpen(true);
     }
 
@@ -407,13 +536,40 @@ export default function PagesManager() {
         });
 
         setToast({
-            type: "success",
-            title: "Section mise à jour",
-            message: "Les modifications de la section ont été appliquées.",
+            type: "info",
+            title: "Modification non enregistrée",
+            message: "Les changements de la section ont été appliqués. Enregistrez pour confirmer.",
         });
 
         closeEdit();
     }
+
+    function handleSelectPage(docId: string) {
+        if (docId === selectedDocId) return;
+
+        if (isDirty) {
+            const confirmed = window.confirm(
+                "Vous avez des modifications non enregistrées. Voulez-vous vraiment changer de page?"
+            );
+            if (!confirmed) return;
+        }
+
+        setSelectedDocId(docId);
+    }
+
+    const statusClasses =
+        saveState === "saving"
+            ? "border-blue-200 bg-blue-50 text-blue-700"
+            : saveState === "dirty"
+                ? "border-amber-200 bg-amber-50 text-amber-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700";
+
+    const statusDotClasses =
+        saveState === "saving"
+            ? "bg-blue-500"
+            : saveState === "dirty"
+                ? "bg-amber-500"
+                : "bg-emerald-500";
 
     return (
         <div className="space-y-6">
@@ -480,10 +636,18 @@ export default function PagesManager() {
                     loading={loadingList}
                     selectedDocId={selectedDocId}
                     categories={categories}
-                    onSelect={(docId) => setSelectedDocId(docId)}
+                    onSelect={handleSelectPage}
                     onRequestDelete={(docId) => openDelete(docId)}
                     onRefreshList={() => void reloadPagesList(false)}
-                    onCreated={(docId) => setSelectedDocId(docId)}
+                    onCreated={(docId) => {
+                        if (isDirty) {
+                            const confirmed = window.confirm(
+                                "Vous avez des modifications non enregistrées. Voulez-vous vraiment changer de page?"
+                            );
+                            if (!confirmed) return;
+                        }
+                        setSelectedDocId(docId);
+                    }}
                 />
 
                 <div className="rounded-xl border border-gray-200 bg-white">
@@ -496,20 +660,65 @@ export default function PagesManager() {
                                 </div>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={onSave}
-                                disabled={!canSave}
-                                className={[
-                                    "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
-                                    canSave
-                                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                                        : "cursor-not-allowed bg-gray-200 text-gray-400",
-                                ].join(" ")}
-                            >
-                                <Save className="h-4 w-4" />
-                                {saving ? "Enregistrement…" : "Enregistrer"}
-                            </button>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div
+                                    className={[
+                                        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium",
+                                        statusClasses,
+                                    ].join(" ")}
+                                    aria-live="polite"
+                                >
+                                    <span
+                                        className={[
+                                            "h-2.5 w-2.5 rounded-full",
+                                            saveState === "saving" ? "animate-pulse" : "",
+                                            statusDotClasses,
+                                        ].join(" ")}
+                                    />
+
+                                    {saveState === "saving" ? (
+                                        <>
+                                            <Clock3 className="h-3.5 w-3.5" />
+                                            <span>Enregistrement en cours…</span>
+                                        </>
+                                    ) : saveState === "dirty" ? (
+                                        <>
+                                            <AlertCircle className="h-3.5 w-3.5" />
+                                            <span>Modifications non enregistrées</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                            <span>Toutes les modifications sont enregistrées</span>
+                                        </>
+                                    )}
+                                </div>
+
+                                {lastSavedAt && !isDirty && !saving ? (
+                                    <div className="text-xs text-gray-500">
+                                        Dernière sauvegarde à {formatLastSaved(lastSavedAt)}
+                                    </div>
+                                ) : null}
+
+                                <button
+                                    type="button"
+                                    onClick={onSave}
+                                    disabled={!canSave}
+                                    className={[
+                                        "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                                        canSave
+                                            ? "bg-blue-600 text-white hover:bg-blue-700"
+                                            : "cursor-not-allowed bg-gray-200 text-gray-400",
+                                    ].join(" ")}
+                                >
+                                    <Save className="h-4 w-4" />
+                                    {saving
+                                        ? "Enregistrement…"
+                                        : isDirty
+                                            ? "Enregistrer"
+                                            : "Enregistré"}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
